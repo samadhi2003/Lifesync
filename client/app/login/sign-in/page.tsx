@@ -69,7 +69,7 @@ export default function SignInPage() {
 
                 {/* Footer */}
                 <div className="mt-8 text-center text-sm text-gray-400">
-                    Already have an account?{" "}
+                    Already have't an account?{" "}
                     <Link href="/login" className="text-[#008080] font-bold hover:underline decoration-1 underline-offset-4">
                         Signup
                     </Link>

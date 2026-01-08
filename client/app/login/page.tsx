@@ -2,10 +2,19 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+function LoginContent() {
+    const searchParams = useSearchParams();
     const [selectedRole, setSelectedRole] = useState<string | null>(null);
+
+    useEffect(() => {
+        const role = searchParams.get("role");
+        if (role && ["patient", "donor", "doctor"].includes(role)) {
+            setSelectedRole(role);
+        }
+    }, [searchParams]);
 
     const roles = [
         {
@@ -162,5 +171,13 @@ export default function LoginPage() {
                 </Link>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#E6F7F8] flex items-center justify-center">Loading...</div>}>
+            <LoginContent />
+        </Suspense>
     );
 }
