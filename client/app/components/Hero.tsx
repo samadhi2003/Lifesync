@@ -40,7 +40,7 @@ export default function Hero() {
 
                         <div className="flex flex-wrap gap-4 pt-4">
                             <Link
-                                href="/login/sign-in"
+                                href="/register/patient"
                                 className="group flex items-center gap-2 gradient-teal text-white px-6 py-4 rounded-2xl font-semibold transition-all duration-300 hover:shadow-xl hover:shadow-teal-300/50 hover:scale-105 elevation-2"
                             >
                                 Join as a Patient
@@ -61,7 +61,7 @@ export default function Hero() {
                             </Link>
 
                             <Link
-                                href="/login/sign-in"
+                                href="/register/donor"
                                 className="group flex items-center gap-2 glass-strong border-2 border-teal-200 text-teal-800 px-6 py-4 rounded-2xl font-semibold transition-all duration-300 hover:border-teal-300 hover:shadow-lg hover:scale-105"
                             >
                                 Join as a Donor
