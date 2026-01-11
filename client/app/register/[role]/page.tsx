@@ -211,15 +211,7 @@ export default function RegisterStep1() {
 
                     <div className={`pt-6 ${isDoctor && step === 2 ? 'flex gap-4' : ''}`}>
 
-                        {isDoctor && step === 2 && (
-                            <button
-                                type="button"
-                                onClick={handleBack}
-                                className="w-1/3 bg-white border border-gray-200 text-gray-600 font-bold py-4 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
-                            >
-                                Back
-                            </button>
-                        )}
+
 
                         <button
                             type="button"
@@ -227,14 +219,15 @@ export default function RegisterStep1() {
                                 if (isDoctor && step === 1) handleNext();
                                 // else submit
                             }}
-                            className={`${isDoctor && step === 2 ? 'w-2/3' : 'w-full'} bg-[#0E7A75] text-white font-bold py-4 rounded-lg hover:bg-[#0B635F] transition-colors shadow-lg`}
+                            className="w-full bg-[#0E7A75] text-white font-bold py-4 rounded-lg hover:bg-[#0B635F] transition-colors shadow-lg"
                         >
                             {isDoctor && step === 2 ? 'Register' : 'Next'}
                         </button>
+
                     </div>
 
                     <div className="text-center text-xs text-gray-500 mt-4">
-                        Already have an account? <Link href="/login/sign-in" className="text-[#0E7A75] font-bold hover:underline">Login</Link>
+                        Already have an account? <Link href="/login" className="text-[#0E7A75] font-bold hover:underline">Login</Link>
                     </div>
                 </form>
             </div>

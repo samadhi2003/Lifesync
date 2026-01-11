@@ -154,7 +154,7 @@ function RegisterContent() {
                 {/* Footer */}
                 <div className="mt-8 text-sm text-gray-500">
                     Already have an account?{" "}
-                    <Link href="/login/sign-in" className="text-[#008080] font-bold hover:underline decoration-2 underline-offset-4 cursor-pointer">
+                    <Link href="/login" className="text-[#008080] font-bold hover:underline decoration-2 underline-offset-4 cursor-pointer">
                         Login
                     </Link>
                 </div>
