@@ -20,6 +20,8 @@ export default function RegisterStep1() {
         setStep(step - 1);
     };
 
+    const [onDialysis, setOnDialysis] = useState<boolean | null>(null);
+
     return (
         <div className="min-h-screen bg-[#E6F7F8] flex flex-col items-center py-12 px-4 font-sans">
 
@@ -55,7 +57,7 @@ export default function RegisterStep1() {
             {/* Main Form Card */}
             <div className="bg-white rounded-[1.5rem] shadow-[0_10px_40px_rgba(0,0,0,0.08)] w-full max-w-[600px] p-8 md:p-12">
                 <h2 className="text-lg font-bold text-gray-900 mb-8">
-                    {isDoctor && step === 2 ? 'Account Details' : (isDoctor ? 'Doctor registration' : 'Basic Information')}
+                    {isDoctor && step === 2 ? 'Account Details' : (!isDoctor && step === 2 ? 'Medical Information' : (isDoctor ? 'Doctor registration' : 'Basic Information'))}
                 </h2>
 
                 <form className="space-y-6">
@@ -177,7 +179,100 @@ export default function RegisterStep1() {
                         </>
                     )}
 
-                    {/* Step 2 Content (Doctor Only for now) */}
+                    {/* Step 2 Content (Patient/Donor Medical Info) */}
+                    {!isDoctor && step === 2 && (
+                        <>
+                            <div className="space-y-2">
+                                <label className="block text-gray-500 text-xs font-semibold ml-1">Blood Group</label>
+                                <div className="relative">
+                                    <select className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white appearance-none transition-all cursor-pointer text-sm">
+                                        <option value="" disabled selected>Select your blood group</option>
+                                        <option value="A+">A+</option>
+                                        <option value="A-">A-</option>
+                                        <option value="B+">B+</option>
+                                        <option value="B-">B-</option>
+                                        <option value="AB+">AB+</option>
+                                        <option value="AB-">AB-</option>
+                                        <option value="O+">O+</option>
+                                        <option value="O-">O-</option>
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400">
+                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-gray-500 text-xs font-semibold ml-1">On Dialysis?</label>
+                                <div className="flex gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setOnDialysis(true)}
+                                        className={`flex-1 py-3.5 rounded-lg border transition-all text-sm font-semibold ${onDialysis === true
+                                            ? "bg-[#4AA3FF] text-white border-[#4AA3FF]"
+                                            : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
+                                            }`}
+                                    >
+                                        Yes
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setOnDialysis(false)}
+                                        className={`flex-1 py-3.5 rounded-lg border transition-all text-sm font-semibold ${onDialysis === false
+                                            ? "bg-[#4AA3FF] text-white border-[#4AA3FF]"
+                                            : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
+                                            }`}
+                                    >
+                                        No
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-gray-500 text-xs font-semibold ml-1">Urgency Level</label>
+                                <div className="relative">
+                                    <select className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white appearance-none transition-all cursor-pointer text-sm">
+                                        <option value="" disabled selected>Select urgency level</option>
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="critical">Critical</option>
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400">
+                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-gray-500 text-xs font-semibold ml-1">HLA Report Uploaded</label>
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#008080] transition-colors bg-white">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                    </svg>
+                                    <p className="text-gray-400 text-xs">Click to upload or drag and drop</p>
+                                    <p className="text-gray-300 text-[10px] mt-1">PDF only</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-gray-500 text-xs font-semibold ml-1">Medical Report Uploaded</label>
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#008080] transition-colors bg-white">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                    </svg>
+                                    <p className="text-gray-400 text-xs">Click to upload or drag and drop</p>
+                                    <p className="text-gray-300 text-[10px] mt-1">PDF only</p>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Step 2 Content (Doctor Only) */}
                     {isDoctor && step === 2 && (
                         <>
                             <div className="space-y-2">
@@ -209,21 +304,22 @@ export default function RegisterStep1() {
                         </>
                     )}
 
-                    <div className={`pt-6 ${isDoctor && step === 2 ? 'flex gap-4' : ''}`}>
+                    <div className={`pt-6 ${step > 1 ? 'flex gap-4' : ''}`}>
 
 
 
                         <button
                             type="button"
                             onClick={() => {
-                                if (isDoctor && step === 1) handleNext();
+                                if (step < (isDoctor ? 2 : 3)) {
+                                    handleNext();
+                                }
                                 // else submit
                             }}
-                            className="w-full bg-[#0E7A75] text-white font-bold py-4 rounded-lg hover:bg-[#0B635F] transition-colors shadow-lg"
+                            className={`${step > 1 ? 'w-2/3' : 'w-full'} bg-[#0E7A75] text-white font-bold py-4 rounded-lg hover:bg-[#0B635F] transition-colors shadow-lg`}
                         >
-                            {isDoctor && step === 2 ? 'Register' : 'Next'}
+                            {step === (isDoctor ? 2 : 3) ? 'Register' : 'Next'}
                         </button>
-
                     </div>
 
                     <div className="text-center text-xs text-gray-500 mt-4">
