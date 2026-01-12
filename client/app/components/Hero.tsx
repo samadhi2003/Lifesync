@@ -80,6 +80,27 @@ export default function Hero() {
                                     />
                                 </svg>
                             </Link>
+
+                            <Link
+                                href="/login/sign-in"
+                                className="group flex items-center gap-2 bg-white border-2 border-teal-100 text-teal-700 px-6 py-4 rounded-2xl font-semibold transition-all duration-300 hover:border-teal-300 hover:shadow-lg hover:scale-105"
+                            >
+                                Join as a Doctor
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9 5l7 7-7 7"
+                                    />
+                                </svg>
+                            </Link>
                         </div>
 
                         {/* Stats Cards */}

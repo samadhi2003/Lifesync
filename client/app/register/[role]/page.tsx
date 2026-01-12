@@ -323,7 +323,7 @@ export default function RegisterStep1() {
                     </div>
 
                     <div className="text-center text-xs text-gray-500 mt-4">
-                        Already have an account? <Link href="/login" className="text-[#0E7A75] font-bold hover:underline">Login</Link>
+                        Already have an account? <Link href="/login/sign-in" className="text-[#0E7A75] font-bold hover:underline">Login</Link>
                     </div>
                 </form>
             </div>
