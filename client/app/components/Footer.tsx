@@ -5,7 +5,7 @@ export default function Footer() {
     const currentYear = new Date().getFullYear();
 
     return (
-        <footer className="relative bg-slate-900 text-white overflow-hidden">
+        <footer id="contact" className="relative bg-slate-900 text-white overflow-hidden">
             {/* Glassmorphic Pattern Overlay */}
             <div className="absolute inset-0 pattern-grid opacity-5"></div>
 
