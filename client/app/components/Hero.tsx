@@ -83,7 +83,7 @@ export default function Hero() {
 
                             <Link
                                 href="/login/sign-in"
-                                className="group flex items-center gap-2 bg-white border-2 border-teal-100 text-teal-700 px-6 py-4 rounded-2xl font-semibold transition-all duration-300 hover:border-teal-300 hover:shadow-lg hover:scale-105"
+                                className="group flex items-center gap-2 glass-strong border-2 border-teal-200 text-teal-800 px-6 py-4 rounded-2xl font-semibold transition-all duration-300 hover:border-teal-300 hover:shadow-lg hover:scale-105"
                             >
                                 Join as a Doctor
                                 <svg
