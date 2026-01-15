@@ -316,7 +316,7 @@ export default function RegisterStep1() {
                                 }
                                 // else submit
                             }}
-                            className={`${step > 1 ? 'w-2/3' : 'w-full'} bg-[#0E7A75] text-white font-bold py-4 rounded-lg hover:bg-[#0B635F] transition-colors shadow-lg`}
+                            className={`${step > 1 ? 'w-full' : 'w-full'} bg-[#0E7A75] text-white font-bold py-4 rounded-lg hover:bg-[#0B635F] transition-colors shadow-lg`}
                         >
                             {step === (isDoctor ? 2 : 3) ? 'Register' : 'Next'}
                         </button>
