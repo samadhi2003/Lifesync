@@ -123,8 +123,8 @@ export default function RegisterStep1() {
                                     <div className="space-y-2">
                                         <label className="block text-gray-500 text-xs font-semibold ml-1">Gender</label>
                                         <div className="relative">
-                                            <select className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white appearance-none transition-all cursor-pointer text-sm">
-                                                <option value="" disabled selected>Select gender</option>
+                                            <select defaultValue="" className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white appearance-none transition-all cursor-pointer text-sm">
+                                                <option value="" disabled>Select gender</option>
                                                 <option value="male">Male</option>
                                                 <option value="female">Female</option>
                                                 <option value="other">Other</option>
@@ -185,8 +185,8 @@ export default function RegisterStep1() {
                             <div className="space-y-2">
                                 <label className="block text-gray-500 text-xs font-semibold ml-1">Blood Group</label>
                                 <div className="relative">
-                                    <select className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white appearance-none transition-all cursor-pointer text-sm">
-                                        <option value="" disabled selected>Select your blood group</option>
+                                    <select defaultValue="" className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white appearance-none transition-all cursor-pointer text-sm">
+                                        <option value="" disabled>Select your blood group</option>
                                         <option value="A+">A+</option>
                                         <option value="A-">A-</option>
                                         <option value="B+">B+</option>
@@ -233,8 +233,8 @@ export default function RegisterStep1() {
                             <div className="space-y-2">
                                 <label className="block text-gray-500 text-xs font-semibold ml-1">Urgency Level</label>
                                 <div className="relative">
-                                    <select className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white appearance-none transition-all cursor-pointer text-sm">
-                                        <option value="" disabled selected>Select urgency level</option>
+                                    <select defaultValue="" className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white appearance-none transition-all cursor-pointer text-sm">
+                                        <option value="" disabled>Select urgency level</option>
                                         <option value="low">Low</option>
                                         <option value="medium">Medium</option>
                                         <option value="high">High</option>
