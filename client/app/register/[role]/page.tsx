@@ -57,7 +57,7 @@ export default function RegisterStep1() {
             {/* Main Form Card */}
             <div className="bg-white rounded-[1.5rem] shadow-[0_10px_40px_rgba(0,0,0,0.08)] w-full max-w-[600px] p-8 md:p-12">
                 <h2 className="text-lg font-bold text-gray-900 mb-8">
-                    {isDoctor && step === 2 ? 'Account Details' : (!isDoctor && step === 2 ? 'Medical Information' : (isDoctor ? 'Doctor registration' : 'Basic Information'))}
+                    {isDoctor && step === 2 ? 'Account Details' : (!isDoctor && step === 2 ? 'Medical Information' : (!isDoctor && step === 3 ? 'Account Details' : (isDoctor ? 'Doctor registration' : 'Basic Information')))}
                 </h2>
 
                 <form className="space-y-6">
@@ -272,8 +272,8 @@ export default function RegisterStep1() {
                         </>
                     )}
 
-                    {/* Step 2 Content (Doctor Only) */}
-                    {isDoctor && step === 2 && (
+                    {/* Step 2 (Doctor) or Step 3 (Patient/Donor) Content - Account Details */}
+                    {((isDoctor && step === 2) || (!isDoctor && step === 3)) && (
                         <>
                             <div className="space-y-2">
                                 <label className="block text-gray-500 text-xs font-semibold ml-1">Username</label>
