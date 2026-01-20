@@ -1,24 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
-
-export default function PatientDashboard() {
+export default function MatchesPage() {
     const [filter, setFilter] = useState("All");
 
     // Mock Data for Donors
     const donors = [
-        { id: 1, name: "Samadhi", bloodGroup: "O+", match: 92, status: "PENDING" },
-        { id: 2, name: "Samadhi", bloodGroup: "O+", match: 87, status: "ACCEPTED" },
-        { id: 3, name: "Samadhi", bloodGroup: "O+", match: 80, status: "ACCEPTED" },
-        { id: 4, name: "Samadhi", bloodGroup: "A+", match: 78, status: "PENDING" },
-        { id: 5, name: "Samadhi", bloodGroup: "O+", match: 72, status: "PENDING" },
-        { id: 6, name: "Samadhi", bloodGroup: "O-", match: 68, status: "PENDING" },
-        { id: 7, name: "Samadhi", bloodGroup: "O+", match: 92, status: "PENDING" },
-        { id: 8, name: "Samadhi", bloodGroup: "O+", match: 87, status: "ACCEPTED" },
-        { id: 9, name: "Samadhi", bloodGroup: "O+", match: 80, status: "PENDING" },
-        { id: 10, name: "Samadhi", bloodGroup: "A+", match: 45, status: "PENDING" },
-        { id: 11, name: "Samadhi", bloodGroup: "O+", match: 30, status: "PENDING" },
+        { id: 1, name: "Samadhi", bloodGroup: "O+", match: 92, status: "ACCEPTED" },
+        { id: 3, name: "Amal", bloodGroup: "A+", match: 78, status: "REQUESTED" },
+        { id: 5, name: "Nimal", bloodGroup: "O-", match: 68, status: "REQUESTED" },
+        { id: 6, name: "Sunil", bloodGroup: "B+", match: 85, status: "ACCEPTED" },
     ];
 
     const getProgressColor = (match: number) => {
@@ -27,56 +20,38 @@ export default function PatientDashboard() {
         return "bg-[#EF5350]"; // Red
     };
 
-
+    const getStatusStyles = (status: string) => {
+        const s = status.toUpperCase();
+        switch (s) {
+            case "ACCEPTED": return "bg-blue-100 text-blue-600 border-blue-200";
+            case "REQUESTED": return "bg-purple-100 text-purple-600 border-purple-200";
+            default: return "bg-gray-100 text-gray-500";
+        }
+    };
 
     const filteredDonors = donors.filter(donor => {
         if (filter === "All") return true;
-        if (filter === "High") return donor.match >= 80;
-        if (filter === "Medium") return donor.match >= 50 && donor.match < 80;
-        if (filter === "Low") return donor.match < 50;
-        return true;
+        return donor.status.toUpperCase() === filter.toUpperCase();
     });
 
     return (
         <div className="font-sans min-h-screen relative overflow-hidden">
-            {/* Decorative Background Elements - Essential for Glassmorphism */}
+            {/* Decorative Background Elements */}
             <div className="fixed top-20 left-20 w-72 h-72 bg-teal-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 -z-10 animate-blob"></div>
             <div className="fixed top-40 right-20 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 -z-10 animate-blob animation-delay-2000"></div>
             <div className="fixed -bottom-8 left-1/3 w-72 h-72 bg-pink-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 -z-10 animate-blob animation-delay-4000"></div>
 
-            {/* Welcome Banner */}
-            <div className="mb-10 bg-gradient-to-r from-[#00A896]/90 to-[#028090]/90 backdrop-blur-md rounded-xl p-8 md:p-10 text-white shadow-2xl relative overflow-hidden border border-white/20">
-                {/* Glass/Blur Effect Overlays */}
-                <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 bg-teal-400/20 rounded-full blur-3xl"></div>
-
-                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-white/20 rounded-full backdrop-blur-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                            <h1 className="text-3xl font-bold tracking-tight text-white drop-shadow-sm">Welcome back, Samadhi!</h1>
-                        </div>
-                        <p className="text-teal-50 ml-11 text-lg font-medium opacity-90">We found <span className="font-bold text-white">11 potential matches</span> based on your profile.</p>
-                    </div>
-
-                </div>
-            </div>
-
             {/* Header */}
-            <div className="mb-8 pl-2">
-                <h1 className="text-[#004D40] text-3xl font-bold mb-1">All Matches</h1>
-                <p className="text-slate-500">Browse all potential kidney donors</p>
+            <div className="mb-8 pl-2 mt-8">
+                <h1 className="text-[#004D40] text-3xl font-bold mb-1">My Matches</h1>
+                <p className="text-slate-500">Track and manage your donor connections</p>
             </div>
 
-            {/* Filter Bar - Glassmorphism */}
-            <div className="bg-white/50 backdrop-blur-xl border border-white/40 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between mb-8 shadow-lg ring-1 ring-white/20">
-                <div className="font-bold text-[#00695C] text-lg pl-2">Filter by Match Level</div>
-                <div className="flex gap-2">
-                    {["All", "High", "Medium", "Low"].map((f) => (
+            {/* Status Filter Bar - Glassmorphism */}
+            <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between mb-8 shadow-lg ring-1 ring-white/20">
+                <div className="font-bold text-[#00695C] text-lg pl-2">Filter by Status</div>
+                <div className="flex gap-2 flex-wrap justify-center">
+                    {["All", "Accepted", "Requested"].map((f) => (
                         <button
                             key={f}
                             onClick={() => setFilter(f)}
@@ -94,7 +69,7 @@ export default function PatientDashboard() {
             <p className="text-slate-500 text-sm mb-6 font-medium pl-2">Showing {filteredDonors.length} of {donors.length} donors</p>
 
             {/* Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
                 {filteredDonors.map((donor) => (
                     <div key={donor.id} className="group bg-white/40 backdrop-blur-md rounded-3xl p-6 shadow-lg border border-white/30 hover:shadow-2xl hover:bg-white/60 transition-all duration-300 relative overflow-hidden ring-1 ring-white/20 hover:-translate-y-1">
 
@@ -115,6 +90,9 @@ export default function PatientDashboard() {
                                     </div>
                                 </div>
                             </div>
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${getStatusStyles(donor.status)}`}>
+                                {donor.status}
+                            </span>
                         </div>
 
                         {/* Match Progress */}
@@ -136,11 +114,19 @@ export default function PatientDashboard() {
                             </div>
                         </div>
 
-                        {/* Action Buttons */}
+                        {/* Action Buttons based on status */}
                         <div className="flex gap-3 relative z-10">
-                            <button className="w-full bg-[#00796B] hover:bg-[#00695C] text-white text-sm font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-teal-900/10 active:scale-95">
-                                Request
-                            </button>
+                            {donor.status.toUpperCase() === 'ACCEPTED' ? (
+                                <Link href={`/dashboard/patient/matches/${donor.id}`} className="flex-1">
+                                    <button className="w-full bg-white/50 hover:bg-white text-gray-700 border border-white/60 hover:border-white text-sm font-bold py-3.5 rounded-xl transition-all shadow-sm active:scale-95">
+                                        View profile
+                                    </button>
+                                </Link>
+                            ) : (
+                                <button className="w-full bg-[#00796B]/20 text-[#00796B] border border-[#00796B]/30 text-sm font-bold py-3.5 rounded-xl cursor-default" disabled>
+                                    Requested
+                                </button>
+                            )}
                         </div>
                     </div>
                 ))}

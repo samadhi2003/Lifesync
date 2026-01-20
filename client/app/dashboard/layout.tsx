@@ -1,11 +1,20 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const pathname = usePathname();
+
+    const isActive = (path: string) => {
+        return pathname === path ? "text-[#008080] border-b-2 border-[#008080] pb-1" : "hover:text-[#008080] transition-colors";
+    };
+
     return (
         <div className="min-h-screen bg-slate-50">
             {/* Navbar */}
@@ -23,8 +32,8 @@ export default function DashboardLayout({
 
                 {/* Nav Links */}
                 <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-gray-500">
-                    <Link href="/dashboard/patient" className="text-[#008080] border-b-2 border-[#008080] pb-1">Home</Link>
-                    <Link href="#" className="hover:text-[#008080] transition-colors">Matches</Link>
+                    <Link href="/dashboard/patient" className={isActive("/dashboard/patient")}>Home</Link>
+                    <Link href="/dashboard/patient/matches" className={isActive("/dashboard/patient/matches")}>Matches</Link>
                     <Link href="#" className="hover:text-[#008080] transition-colors">Chatbot</Link>
                     <Link href="#" className="hover:text-[#008080] transition-colors">Profile</Link>
                 </div>
