@@ -1,15 +1,19 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 
 export default function PatientDashboard() {
-    // Mock Data for Donors
     const donors = [
         { id: 1, name: "Samadhi", bloodGroup: "O+", match: 92 },
         { id: 2, name: "Samadhi", bloodGroup: "O+", match: 87 },
         { id: 3, name: "Samadhi", bloodGroup: "O+", match: 80 },
         { id: 4, name: "Samadhi", bloodGroup: "A+", match: 78 },
         { id: 5, name: "Samadhi", bloodGroup: "O+", match: 72 },
-        { id: 6, name: "Samadhi", bloodGroup: "O+", match: 30 },
+        { id: 6, name: "Samadhi", bloodGroup: "O-", match: 68 },
     ];
+
+    const [selectedId, setSelectedId] = useState<number | null>(null);
 
     const getProgressColor = (match: number) => {
         if (match >= 80) return "bg-[#25CBA1]"; // Green
@@ -20,7 +24,7 @@ export default function PatientDashboard() {
     return (
         <div className="space-y-12 font-sans">
             {/* Welcome Banner */}
-            <div className="bg-gradient-to-r from-[#44D6A8] to-[#007F81] rounded-[2rem] p-10 md:p-14 text-white shadow-lg relative overflow-hidden">
+            <div className="bg-gradient-to-r from-[#44D6A8] to-[#007F81] rounded-xl p-10 md:p-14 text-white shadow-lg relative overflow-hidden">
                 <div className="relative z-10">
                     <div className="flex items-center gap-4 mb-2">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -42,7 +46,14 @@ export default function PatientDashboard() {
                 {/* Donors Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {donors.map((donor) => (
-                        <div key={donor.id} className="bg-[#F2F4F4] rounded-2xl p-6 shadow-sm border border-transparent hover:border-teal-100 transition-all">
+                        <div
+                            key={donor.id}
+                            onClick={() => setSelectedId(donor.id)}
+                            className={`rounded-xl p-6 shadow-sm border transition-all cursor-pointer ${selectedId === donor.id
+                                ? "bg-[#D5F2EA] border-[#25CBA1]"
+                                : "bg-[#F2F4F4] border-transparent hover:border-teal-100"
+                                }`}
+                        >
                             <div className="flex items-start gap-4 mb-8">
                                 <div className="w-12 h-12 rounded-full bg-[#CBE9EA] flex items-center justify-center text-[#006967]">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
