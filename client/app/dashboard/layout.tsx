@@ -34,7 +34,6 @@ export default function DashboardLayout({
                 <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-gray-500">
                     <Link href="/dashboard/patient" className={isActive("/dashboard/patient")}>Home</Link>
                     <Link href="/dashboard/patient/matches" className={isActive("/dashboard/patient/matches")}>Matches</Link>
-                    <Link href="/dashboard/patient/chatbot" className={isActive("/dashboard/patient/chatbot")}>Chatbot</Link>
                     <Link href="#" className="hover:text-[#008080] transition-colors">Profile</Link>
                 </div>
 
