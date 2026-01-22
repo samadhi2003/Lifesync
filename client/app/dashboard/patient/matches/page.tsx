@@ -8,10 +8,10 @@ export default function MatchesPage() {
 
     // Mock Data for Donors
     const donors = [
-        { id: 1, name: "Samadhi", bloodGroup: "O+", match: 92, status: "ACCEPTED" },
-        { id: 3, name: "Amal", bloodGroup: "A+", match: 78, status: "REQUESTED" },
-        { id: 5, name: "Nimal", bloodGroup: "O-", match: 68, status: "REQUESTED" },
-        { id: 6, name: "Sunil", bloodGroup: "B+", match: 85, status: "ACCEPTED" },
+        { id: 1, name: "Samadhi", bloodGroup: "O+", match: 92, status: "ACCEPTED", location: "Colombo, LK", urgency: "Critical" },
+        { id: 3, name: "Amal Perera", bloodGroup: "A+", match: 78, status: "REQUESTED", location: "Kandy, LK", urgency: "High" },
+        { id: 5, name: "Nimal Silva", bloodGroup: "O-", match: 68, status: "REQUESTED", location: "Galle, LK", urgency: "Moderate" },
+        { id: 6, name: "Sunil Bandara", bloodGroup: "B+", match: 85, status: "ACCEPTED", location: "Jaffna, LK", urgency: "High" },
     ];
 
     const getProgressColor = (match: number) => {
@@ -78,38 +78,54 @@ export default function MatchesPage() {
 
                         <div className="flex justify-between items-start mb-6 relative z-10">
                             <div className="flex gap-4">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-50 to-white flex items-center justify-center text-[#00796B] shadow-inner border border-white/50">
+                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-50 to-white flex items-center justify-center text-[#00796B] shadow-inner border border-white/50 group-hover:scale-110 transition-transform duration-500">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-gray-900 text-xl tracking-tight">{donor.name}</h3>
-                                    <div className="bg-white/50 border border-white/30 text-gray-600 text-[11px] font-bold px-3 py-1 rounded-full inline-block mt-1 uppercase tracking-wide">
-                                        Blood: {donor.bloodGroup}
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                        <p className="text-gray-400 text-xs font-semibold">{donor.location}</p>
                                     </div>
                                 </div>
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${getStatusStyles(donor.status)}`}>
-                                {donor.status}
-                            </span>
+                        </div>
+
+                        {/* Mid Section: Stats */}
+                        <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
+                            <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100/50">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Blood Type</span>
+                                <p className="text-[#00796B] text-xl font-black">{donor.bloodGroup}</p>
+                            </div>
+                            <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100/50">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Match Level</span>
+                                <p className={`text-xl font-black ${donor.match >= 80 ? 'text-teal-600' : 'text-orange-600'}`}>
+                                    {donor.match >= 80 ? 'Elite' : 'Strong'}
+                                </p>
+                            </div>
                         </div>
 
                         {/* Match Progress */}
-                        <div className="mb-8 relative z-10">
-                            <div className="flex justify-between items-end mb-2">
-                                <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest">Compatibility</span>
-                                <span className={`text-2xl font-black ${donor.match >= 80 ? 'text-[#00796B]' : 'text-gray-700'}`}>
-                                    {donor.match}%
-                                </span>
+                        <div className="mb-10 relative z-10">
+                            <div className="flex justify-between items-end mb-3">
+                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Compatibility</p>
+                                <div className="flex items-baseline gap-0.5">
+                                    <span className="text-2xl font-black text-gray-900">{donor.match}</span>
+                                    <span className="text-xs font-bold text-[#00796B]">%</span>
+                                </div>
                             </div>
-                            <div className="w-full bg-black/5 rounded-full h-3 backdrop-blur-sm overflow-hidden border border-white/10">
+                            <div className="w-full bg-gray-100/80 rounded-full h-2.5 p-0.5 shadow-inner">
                                 <div
-                                    className={`h-3 rounded-full ${getProgressColor(donor.match)} shadow-sm relative overflow-hidden`}
+                                    className={`h-full rounded-full shadow-lg transition-all duration-1000 ease-out relative overflow-hidden ${donor.match >= 80 ? 'bg-gradient-to-r from-[#26A69A] to-[#4DB6AC]' : 'bg-gradient-to-r from-[#FFB74D] to-[#FFA726]'
+                                        }`}
                                     style={{ width: `${donor.match}%` }}
                                 >
-                                    {/* Shimmer effect on progress bar */}
-                                    <div className="absolute top-0 left-0 bottom-0 right-0 bg-gradient-to-r from-transparent via-white/30 to-transparent w-full -translate-x-full animate-[shimmer_2s_infinite]"></div>
+                                    <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
                                 </div>
                             </div>
                         </div>
@@ -118,12 +134,15 @@ export default function MatchesPage() {
                         <div className="flex gap-3 relative z-10">
                             {donor.status.toUpperCase() === 'ACCEPTED' ? (
                                 <Link href={`/dashboard/patient/matches/${donor.id}`} className="flex-1">
-                                    <button className="w-full bg-white/50 hover:bg-white text-gray-700 border border-white/60 hover:border-white text-sm font-bold py-3.5 rounded-xl transition-all shadow-sm active:scale-95">
-                                        View profile
+                                    <button className="w-full bg-[#00796B] hover:bg-[#00695C] text-white text-sm font-black py-4 rounded-[1.25rem] transition-all duration-300 shadow-xl shadow-teal-900/10 hover:shadow-teal-900/30 active:scale-95 border-b-4 border-teal-900/20">
+                                        View Profile
                                     </button>
                                 </Link>
                             ) : (
-                                <button className="w-full bg-[#00796B]/20 text-[#00796B] border border-[#00796B]/30 text-sm font-bold py-3.5 rounded-xl cursor-default" disabled>
+                                <button className="w-full bg-[#00796B]/10 text-[#00796B]/60 border border-[#00796B]/20 text-sm font-black py-4 rounded-[1.25rem] cursor-default flex items-center justify-center gap-2" disabled>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
                                     Requested
                                 </button>
                             )}

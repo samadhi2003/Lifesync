@@ -118,12 +118,6 @@ export default function PatientDashboard() {
                                     </div>
                                 </div>
                             </div>
-                            <div className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border shadow-sm ${donor.urgency === 'Critical' ? 'bg-red-50 text-red-600 border-red-100' :
-                                donor.urgency === 'High' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                                    'bg-teal-50 text-teal-600 border-teal-100'
-                                }`}>
-                                {donor.urgency}
-                            </div>
                         </div>
 
                         {/* Mid Section: Stats */}
