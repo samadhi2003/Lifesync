@@ -8,17 +8,17 @@ export default function PatientDashboard() {
 
     // Mock Data for Donors
     const donors = [
-        { id: 1, name: "Samadhi", bloodGroup: "O+", match: 92, status: "PENDING" },
-        { id: 2, name: "Samadhi", bloodGroup: "O+", match: 87, status: "ACCEPTED" },
-        { id: 3, name: "Samadhi", bloodGroup: "O+", match: 80, status: "ACCEPTED" },
-        { id: 4, name: "Samadhi", bloodGroup: "A+", match: 78, status: "PENDING" },
-        { id: 5, name: "Samadhi", bloodGroup: "O+", match: 72, status: "PENDING" },
-        { id: 6, name: "Samadhi", bloodGroup: "O-", match: 68, status: "PENDING" },
-        { id: 7, name: "Samadhi", bloodGroup: "O+", match: 92, status: "PENDING" },
-        { id: 8, name: "Samadhi", bloodGroup: "O+", match: 87, status: "ACCEPTED" },
-        { id: 9, name: "Samadhi", bloodGroup: "O+", match: 80, status: "PENDING" },
-        { id: 10, name: "Samadhi", bloodGroup: "A+", match: 45, status: "PENDING" },
-        { id: 11, name: "Samadhi", bloodGroup: "O+", match: 30, status: "PENDING" },
+        { id: 1, name: "Samadhi", bloodGroup: "O+", match: 92, status: "PENDING", location: "Colombo, LK", urgency: "Critical" },
+        { id: 2, name: "Samadhi", bloodGroup: "O+", match: 87, status: "ACCEPTED", location: "Kandy, LK", urgency: "High" },
+        { id: 3, name: "Samadhi", bloodGroup: "O+", match: 80, status: "ACCEPTED", location: "Galle, LK", urgency: "High" },
+        { id: 4, name: "Samadhi", bloodGroup: "A+", match: 78, status: "PENDING", location: "Jaffna, LK", urgency: "Moderate" },
+        { id: 5, name: "Samadhi", bloodGroup: "O+", match: 72, status: "PENDING", location: "Matara, LK", urgency: "Moderate" },
+        { id: 6, name: "Samadhi", bloodGroup: "O-", match: 68, status: "PENDING", location: "Negombo, LK", urgency: "Moderate" },
+        { id: 7, name: "Samadhi", bloodGroup: "O+", match: 92, status: "PENDING", location: "Colombo, LK", urgency: "Critical" },
+        { id: 8, name: "Samadhi", bloodGroup: "O+", match: 87, status: "ACCEPTED", location: "Kandy, LK", urgency: "High" },
+        { id: 9, name: "Samadhi", bloodGroup: "O+", match: 80, status: "PENDING", location: "Galle, LK", urgency: "High" },
+        { id: 10, name: "Samadhi", bloodGroup: "A+", match: 45, status: "PENDING", location: "Jaffna, LK", urgency: "Moderate" },
+        { id: 11, name: "Samadhi", bloodGroup: "O+", match: 30, status: "PENDING", location: "Matara, LK", urgency: "Moderate" },
     ];
 
     const getProgressColor = (match: number) => {
@@ -45,24 +45,23 @@ export default function PatientDashboard() {
             <div className="fixed -bottom-8 left-1/3 w-72 h-72 bg-pink-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 -z-10 animate-blob animation-delay-4000"></div>
 
             {/* Welcome Banner */}
-            <div className="mb-10 bg-gradient-to-r from-[#00A896]/90 to-[#028090]/90 backdrop-blur-md rounded-xl p-8 md:p-10 text-white shadow-2xl relative overflow-hidden border border-white/20">
+            <div className="mb-10 bg-gradient-to-r from-[#48D597] to-[#2E807D] backdrop-blur-md rounded-2xl p-8 md:p-14 text-white shadow-2xl relative overflow-hidden border border-white/20">
                 {/* Glass/Blur Effect Overlays */}
                 <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
                 <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 bg-teal-400/20 rounded-full blur-3xl"></div>
 
-                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-white/20 rounded-full backdrop-blur-md">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <div className="relative z-10">
+                    <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-6 mb-1">
+                            <div className="text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                                 </svg>
                             </div>
-                            <h1 className="text-3xl font-bold tracking-tight text-white drop-shadow-sm">Welcome back, Samadhi!</h1>
+                            <h1 className="text-3xl font-bold tracking-tight text-white drop-shadow-sm">Welcome back, Samadhi Uluwaduge</h1>
                         </div>
-                        <p className="text-teal-50 ml-11 text-lg font-medium opacity-90">We found <span className="font-bold text-white">11 potential matches</span> based on your profile.</p>
+                        <p className="text-white/90 ml-[64px] text-sm font-medium">We found 6 potential matches for you</p>
                     </div>
-
                 </div>
             </div>
 
@@ -103,42 +102,68 @@ export default function PatientDashboard() {
 
                         <div className="flex justify-between items-start mb-6 relative z-10">
                             <div className="flex gap-4">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-50 to-white flex items-center justify-center text-[#00796B] shadow-inner border border-white/50">
+                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-50 to-white flex items-center justify-center text-[#00796B] shadow-inner border border-white/50 group-hover:scale-110 transition-transform duration-500">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-gray-900 text-xl tracking-tight">{donor.name}</h3>
-                                    <div className="bg-white/50 border border-white/30 text-gray-600 text-[11px] font-bold px-3 py-1 rounded-full inline-block mt-1 uppercase tracking-wide">
-                                        Blood: {donor.bloodGroup}
+                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                        <p className="text-gray-400 text-xs font-semibold">{donor.location}</p>
                                     </div>
                                 </div>
+                            </div>
+                            <div className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border shadow-sm ${donor.urgency === 'Critical' ? 'bg-red-50 text-red-600 border-red-100' :
+                                donor.urgency === 'High' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                                    'bg-teal-50 text-teal-600 border-teal-100'
+                                }`}>
+                                {donor.urgency}
+                            </div>
+                        </div>
+
+                        {/* Mid Section: Stats */}
+                        <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
+                            <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100/50">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Blood Type</span>
+                                <p className="text-[#00796B] text-xl font-black">{donor.bloodGroup}</p>
+                            </div>
+                            <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100/50">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Match Level</span>
+                                <p className={`text-xl font-black ${donor.match >= 80 ? 'text-teal-600' : 'text-orange-600'}`}>
+                                    {donor.match >= 80 ? 'Elite' : 'Strong'}
+                                </p>
                             </div>
                         </div>
 
                         {/* Match Progress */}
-                        <div className="mb-8 relative z-10">
-                            <div className="flex justify-between items-end mb-2">
-                                <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest">Compatibility</span>
-                                <span className={`text-2xl font-black ${donor.match >= 80 ? 'text-[#00796B]' : 'text-gray-700'}`}>
-                                    {donor.match}%
-                                </span>
+                        <div className="mb-10 relative z-10">
+                            <div className="flex justify-between items-end mb-3">
+                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Compatibility</p>
+                                <div className="flex items-baseline gap-0.5">
+                                    <span className="text-2xl font-black text-gray-900">{donor.match}</span>
+                                    <span className="text-xs font-bold text-[#00796B]">%</span>
+                                </div>
                             </div>
-                            <div className="w-full bg-black/5 rounded-full h-3 backdrop-blur-sm overflow-hidden border border-white/10">
+                            <div className="w-full bg-gray-100/80 rounded-full h-2.5 p-0.5 shadow-inner">
                                 <div
-                                    className={`h-3 rounded-full ${getProgressColor(donor.match)} shadow-sm relative overflow-hidden`}
+                                    className={`h-full rounded-full shadow-lg transition-all duration-1000 ease-out relative overflow-hidden ${donor.match >= 80 ? 'bg-gradient-to-r from-[#26A69A] to-[#4DB6AC]' : 'bg-gradient-to-r from-[#FFB74D] to-[#FFA726]'
+                                        }`}
                                     style={{ width: `${donor.match}%` }}
                                 >
                                     {/* Shimmer effect on progress bar */}
-                                    <div className="absolute top-0 left-0 bottom-0 right-0 bg-gradient-to-r from-transparent via-white/30 to-transparent w-full -translate-x-full animate-[shimmer_2s_infinite]"></div>
+                                    <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Action Buttons */}
                         <div className="flex gap-3 relative z-10">
-                            <button className="w-full bg-[#00796B] hover:bg-[#00695C] text-white text-sm font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-teal-900/10 active:scale-95">
+                            <button className="w-full bg-[#00796B] hover:bg-[#00695C] text-white text-sm font-black py-4 rounded-[1.25rem] transition-all duration-300 shadow-xl shadow-teal-900/10 hover:shadow-teal-900/30 active:scale-95 border-b-4 border-teal-900/20">
                                 Request
                             </button>
                         </div>

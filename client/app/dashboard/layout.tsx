@@ -32,9 +32,19 @@ export default function DashboardLayout({
 
                 {/* Nav Links */}
                 <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-gray-500">
-                    <Link href="/dashboard/patient" className={isActive("/dashboard/patient")}>Home</Link>
-                    <Link href="/dashboard/patient/matches" className={isActive("/dashboard/patient/matches")}>Matches</Link>
-                    <Link href="#" className="hover:text-[#008080] transition-colors">Profile</Link>
+                    {pathname?.startsWith("/dashboard/donor") ? (
+                        <>
+                            <Link href="/dashboard/donor" className={isActive("/dashboard/donor")}>Home</Link>
+                            <Link href="/dashboard/donor/matches" className={isActive("/dashboard/donor/matches")}>Matches</Link>
+                            <Link href="/dashboard/donor/profile" className={isActive("/dashboard/donor/profile")}>Profile</Link>
+                        </>
+                    ) : (
+                        <>
+                            <Link href="/dashboard/patient" className={isActive("/dashboard/patient")}>Home</Link>
+                            <Link href="/dashboard/patient/matches" className={isActive("/dashboard/patient/matches")}>Matches</Link>
+                            <Link href="/dashboard/patient/profile" className={isActive("/dashboard/patient/profile")}>Profile</Link>
+                        </>
+                    )}
                 </div>
 
                 {/* Logout Button */}
