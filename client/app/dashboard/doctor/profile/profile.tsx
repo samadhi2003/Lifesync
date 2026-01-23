@@ -58,7 +58,7 @@ export default function DoctorProfile() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
                 <div className="lg:col-span-2 space-y-8">
                     {/* Professional Info */}
-                    <div className="bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 p-10 shadow-xl">
+                    <div className="bg-white/70 backdrop-blur-2xl rounded-[1.5rem] border border-white/50 p-10 shadow-xl">
                         <div className="flex items-center gap-3 mb-10">
                             <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-[#008080]">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -110,15 +110,15 @@ export default function DoctorProfile() {
 
                     {/* Stats or Achievements */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-teal-500 rounded-[2rem] p-8 text-white shadow-xl">
+                        <div className="bg-teal-500 rounded-[1rem] p-8 text-white shadow-xl">
                             <h4 className="text-3xl font-black mb-1">128</h4>
                             <p className="text-teal-100 text-xs font-bold uppercase tracking-widest">Successful Matches</p>
                         </div>
-                        <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-xl">
+                        <div className="bg-white rounded-[1rem] p-8 border border-gray-100 shadow-xl">
                             <h4 className="text-3xl font-black text-gray-900 mb-1">42</h4>
                             <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Active Patients</p>
                         </div>
-                        <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-xl">
+                        <div className="bg-white rounded-[1rem] p-8 border border-gray-100 shadow-xl">
                             <h4 className="text-3xl font-black text-gray-900 mb-1">15</h4>
                             <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Years Exp.</p>
                         </div>
@@ -126,7 +126,7 @@ export default function DoctorProfile() {
                 </div>
 
                 <div className="space-y-8">
-                    <div className="bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 p-10 shadow-xl">
+                    <div className="bg-white/70 backdrop-blur-2xl rounded-[1.5rem] border border-white/50 p-10 shadow-xl">
                         <h2 className="text-xl font-bold text-gray-900 mb-8">Security & Alerts</h2>
                         <div className="space-y-8">
                             <div className="flex items-center justify-between">
@@ -150,7 +150,7 @@ export default function DoctorProfile() {
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-[#111827] to-[#1f2937] rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden">
+                    <div className="bg-gradient-to-br from-[#111827] to-[#1f2937] rounded-[1.5rem] p-8 text-white shadow-2xl relative overflow-hidden">
                         <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-white/5 rounded-full blur-2xl font-sans"></div>
                         <h3 className="text-lg font-bold mb-2">Need Technical Help?</h3>
                         <p className="text-gray-400 text-xs leading-relaxed mb-6 font-medium">Contact the LifeSync IT Department for system inquiries and issues.</p>

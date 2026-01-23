@@ -1,4 +1,4 @@
-import DonorMatches from "../matches";
+import DonorMatches from "./matches";
 
 export default function MatchesPage() {
     return (

@@ -1,4 +1,4 @@
-import DonorProfile from "../profile";
+import DonorProfile from "./profile";
 
 export default function ProfilePage() {
     return (
