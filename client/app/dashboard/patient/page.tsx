@@ -45,7 +45,7 @@ export default function PatientDashboard() {
             <div className="fixed -bottom-8 left-1/3 w-72 h-72 bg-pink-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-30 -z-10 animate-blob animation-delay-4000"></div>
 
             {/* Welcome Banner */}
-            <div className="mb-10 bg-gradient-to-r from-[#48D597] to-[#2E807D] backdrop-blur-md rounded-2xl p-8 md:p-14 text-white shadow-2xl relative overflow-hidden border border-white/20">
+            <div className="mb-10 bg-gradient-to-r from-[#29D496] via-[#B5DDD2] to-[#297C78] backdrop-blur-md rounded-2xl p-8 md:p-14 text-white shadow-2xl relative overflow-hidden border border-white/20">
                 {/* Glass/Blur Effect Overlays */}
                 <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
                 <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 bg-teal-400/20 rounded-full blur-3xl"></div>
