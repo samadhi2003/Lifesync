@@ -38,6 +38,13 @@ export default function DashboardLayout({
                             <Link href="/dashboard/donor/matches" className={isActive("/dashboard/donor/matches")}>Matches</Link>
                             <Link href="/dashboard/donor/profile" className={isActive("/dashboard/donor/profile")}>Profile</Link>
                         </>
+                    ) : pathname?.startsWith("/dashboard/doctor") ? (
+                        <>
+                            <Link href="/dashboard/doctor" className={isActive("/dashboard/doctor")}>Home</Link>
+                            <Link href="/dashboard/doctor/find-donors" className={isActive("/dashboard/doctor/find-donors")}>Find donors</Link>
+                            <Link href="/dashboard/doctor/patients" className={isActive("/dashboard/doctor/patients")}>Patients</Link>
+                            <Link href="/dashboard/doctor/profile" className={isActive("/dashboard/doctor/profile")}>Profile</Link>
+                        </>
                     ) : (
                         <>
                             <Link href="/dashboard/patient" className={isActive("/dashboard/patient")}>Home</Link>
