@@ -19,6 +19,9 @@ const patientRequests: PatientRequest[] = [
     { id: 4, name: "Kasun Jayawardena", bloodGroup: "A+", matchPercentage: 78, urgency: "Moderate", location: "Jaffna, LK" },
     { id: 5, name: "Indika Rathnayake", bloodGroup: "O+", matchPercentage: 72, urgency: "Moderate", location: "Matara, LK" },
     { id: 6, name: "Anura Bandara", bloodGroup: "O-", matchPercentage: 68, urgency: "Moderate", location: "Negombo, LK" },
+    { id: 7, name: "Dasun Shanaka", bloodGroup: "B+", matchPercentage: 55, urgency: "Moderate", location: "Kuruwita, LK" },
+    { id: 8, name: "Wanindu Hasaranga", bloodGroup: "AB+", matchPercentage: 48, urgency: "Moderate", location: "Galle, LK" },
+    { id: 9, name: "Charith Asalanka", bloodGroup: "O+", matchPercentage: 42, urgency: "Moderate", location: "Elpitiya, LK" },
 ];
 
 export default function DonorHome() {
