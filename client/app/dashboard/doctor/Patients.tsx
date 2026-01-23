@@ -15,7 +15,7 @@ export default function Patients() {
     return (
         <div className="font-sans relative min-h-screen">
             <div className="mb-10 relative z-10">
-                <h1 className="text-[#006967] text-4xl font-black tracking-tight mb-2">Patient Search</h1>
+                <h1 className="text-[#006967] text-3xl font-black tracking-tight mb-2">Patient Search</h1>
                 <p className="text-gray-500 font-medium text-lg">Search for patient information and view matching history</p>
             </div>
 
