@@ -22,6 +22,16 @@ const patientRequests: PatientRequest[] = [
 ];
 
 export default function DonorHome() {
+    const [selectedFilter, setSelectedFilter] = useState<"All" | "High" | "Medium" | "Low">("All");
+
+    const filteredRequests = patientRequests.filter(request => {
+        if (selectedFilter === "All") return true;
+        if (selectedFilter === "High") return request.matchPercentage >= 80;
+        if (selectedFilter === "Medium") return request.matchPercentage >= 60 && request.matchPercentage < 80;
+        if (selectedFilter === "Low") return request.matchPercentage < 60;
+        return true;
+    });
+
     return (
         <div className="font-sans relative min-h-screen">
             {/* Background Decorative Blobs for Glass Effect */}
@@ -61,28 +71,48 @@ export default function DonorHome() {
                         </div>
 
                         <p className="text-white/90 ml-[64px] text-lg font-medium">
-                            You have 6 patient requests waiting for your response
+                            You have {patientRequests.length} patient requests waiting for your response
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* Patient Requests Title */}
+            {/* Filter Section Header */}
+            <div className="mb-8 relative z-10">
+                <h2 className="text-[#006967] text-3xl font-black tracking-tight mb-2">All Matches</h2>
+                <p className="text-gray-500 font-medium text-lg">Browse all potential kidney donors</p>
+            </div>
+
+            {/* Filter Bar */}
             <div className="mb-10 relative z-10">
-                <div className="inline-flex items-center gap-3 px-4 py-1.5 bg-teal-50 rounded-full text-[#008080] text-xs font-bold uppercase tracking-widest mb-4 border border-teal-100 shadow-sm">
-                    <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
-                    </span>
-                    Live Matches
+                <div className="bg-white/70 backdrop-blur-2xl rounded-[2rem] border border-white/50 p-4 shadow-xl shadow-teal-900/[0.04] flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex items-center gap-4 ml-4">
+                        <span className="text-[#008080] font-bold text-lg">Filter by Match Level</span>
+                    </div>
+
+                    <div className="flex items-center bg-gray-50/50 rounded-2xl p-1.5 border border-gray-100 gap-1">
+                        {["All", "High", "Medium", "Low"].map((filter) => (
+                            <button
+                                key={filter}
+                                onClick={() => setSelectedFilter(filter as any)}
+                                className={`px-8 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${selectedFilter === filter
+                                    ? "bg-[#008080] text-white shadow-lg shadow-teal-900/20 scale-105"
+                                    : "text-gray-500 hover:text-[#008080] hover:bg-white"
+                                    }`}
+                            >
+                                {filter}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-                <h2 className="text-[#006967] text-3xl font-black tracking-tight mb-2">Patient Requests</h2>
-                <p className="text-gray-500 font-medium text-lg">Review and respond to patients who matched with you</p>
+                <div className="mt-6 ml-2 font-bold text-gray-400 text-sm">
+                    Showing <span className="text-[#008080]">{filteredRequests.length}</span> of {patientRequests.length} donors
+                </div>
             </div>
 
             {/* Requests Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
-                {patientRequests.map((request) => (
+                {filteredRequests.map((request) => (
                     <div key={request.id} className="group relative bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 p-7 shadow-2xl shadow-teal-900/[0.04] hover:shadow-teal-900/[0.1] transition-all duration-500 hover:-translate-y-2 flex flex-col">
                         {/* Header Section */}
                         <div className="flex justify-between items-start mb-6">
@@ -162,6 +192,6 @@ export default function DonorHome() {
                     100% { transform: translateX(100%); }
                 }
             `}</style>
-        </div >
+        </div>
     );
 }
