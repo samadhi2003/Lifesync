@@ -1,14 +1,91 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { db, auth } from "@/lib/firebase";
+import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function Patients() {
     const [searchTerm, setSearchTerm] = useState("");
     const [hasSearched, setHasSearched] = useState(false);
+    const [patients, setPatients] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [selectedPatient, setSelectedPatient] = useState<any>(null);
+    const [currentUser, setCurrentUser] = useState<any>(null);
 
-    const handleSearch = () => {
-        if (searchTerm.trim()) {
-            setHasSearched(true);
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            setCurrentUser(user);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    // Initial fetch of all patients
+    useEffect(() => {
+        const fetchInitialPatients = async () => {
+            try {
+                setLoading(true);
+                const patientsRef = collection(db, "patients");
+                const q = query(patientsRef);
+                const querySnapshot = await getDocs(q);
+                const fetchedPatients = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                setPatients(fetchedPatients);
+            } catch (error) {
+                console.error("Error initial fetch:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchInitialPatients();
+    }, []);
+
+    const handleSearch = async () => {
+        if (!searchTerm.trim()) {
+            setHasSearched(false);
+            return;
+        }
+
+        setLoading(true);
+        setHasSearched(true);
+
+        try {
+            const patientsRef = collection(db, "patients");
+
+            // In a real app with many patients, you'd use a more specific query or a search service (like Algolia)
+            // For now, getting all patients created by this doctor and filtering client-side for "name" search
+            // Or simple Firestore query for exact/prefix match if possible.
+
+            // Let's try searching by name directly if possible, or just all doctor's patients
+            // FETCH ALL PATIENTS (Debugging Mode)
+            const q = query(patientsRef);
+
+            const querySnapshot = await getDocs(q);
+            const fetchedPatients = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+
+            // Client-side filter for fuzzy search simulation
+            const filtered = fetchedPatients.filter((p: any) =>
+                p.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            setPatients(filtered);
+            if (filtered.length > 0) {
+                setSelectedPatient(filtered[0]); // Select first match by default
+            } else {
+                setSelectedPatient(null);
+            }
+
+        } catch (error) {
+            console.error("Error fetching patients:", error);
+            alert("Failed to search patients.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -44,17 +121,50 @@ export default function Patients() {
             </div>
 
             <div className="relative z-10">
-                {!hasSearched ? (
-                    <div className="bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 p-20 shadow-2xl flex flex-col items-center justify-center text-center gap-6">
-                        <div className="w-24 h-24 bg-gray-50 flex items-center justify-center rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-black text-gray-400">Search for a Patient</h2>
-                            <p className="text-gray-400 mt-2 font-medium">Enter a patient ID to view their information and matching history</p>
-                        </div>
+                {!selectedPatient ? (
+                    <div className="space-y-8">
+                        {loading ? (
+                            <div className="flex items-center justify-center py-20">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#008080]"></div>
+                            </div>
+                        ) : patients.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {patients.map((patient) => (
+                                    <div
+                                        key={patient.id}
+                                        onClick={() => setSelectedPatient(patient)}
+                                        className="bg-white/70 backdrop-blur-xl border border-white/50 rounded-[2rem] p-6 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer group"
+                                    >
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="w-12 h-12 bg-teal-50 rounded-full flex items-center justify-center text-[#008080] group-hover:bg-[#008080] group-hover:text-white transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                </svg>
+                                            </div>
+                                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${patient.urgency === 'Critical' ? 'bg-red-100 text-red-600' : 'bg-teal-100 text-teal-600'}`}>
+                                                {patient.urgency}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900 text-lg mb-1">{patient.name}</h3>
+                                            <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">{patient.bloodGroup} Blood Group</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 p-20 shadow-2xl flex flex-col items-center justify-center text-center gap-6">
+                                <div className="w-24 h-24 bg-gray-50 flex items-center justify-center rounded-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-gray-400">No Patients Found</h2>
+                                    <p className="text-gray-400 mt-2 font-medium">Add patients via the "Find Donors" page to see them here.</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="space-y-10">
@@ -69,23 +179,42 @@ export default function Patients() {
                                 </div>
                                 <div className="space-y-6">
                                     <div>
+                                        <button
+                                            onClick={() => setSelectedPatient(null)}
+                                            className="mb-4 flex items-center gap-2 text-gray-400 hover:text-[#008080] transition-colors text-sm font-bold uppercase tracking-widest"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                            </svg>
+                                            Back to List
+                                        </button>
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Full Name</label>
-                                        <p className="text-2xl font-black text-gray-900">Samadhi Uluwaduge</p>
+                                        <p className="text-2xl font-black text-gray-900">{selectedPatient.name}</p>
                                     </div>
                                     <div className="grid grid-cols-2 gap-6">
                                         <div>
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Age</label>
-                                            <p className="text-xl font-bold text-gray-900">22</p>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Urgency</label>
+                                            <p className={`text-xl font-bold ${selectedPatient.urgency === 'Critical' ? 'text-red-500' : 'text-gray-900'}`}>{selectedPatient.urgency}</p>
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Blood Group</label>
-                                            <p className="text-xl font-bold text-gray-900">O+</p>
+                                            <p className="text-xl font-bold text-gray-900">{selectedPatient.bloodGroup}</p>
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Condition</label>
-                                        <p className="text-xl font-bold text-gray-900">Chronic Kidney Disease (Stage 4)</p>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Dialysis Status</label>
+                                        <p className="text-xl font-bold text-gray-900">{selectedPatient.onDialysis ? "On Dialysis" : "Not on Dialysis"}</p>
                                     </div>
+                                    {selectedPatient.hlaUrl && (
+                                        <div className="pt-4">
+                                            <a href={selectedPatient.hlaUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-teal-50 text-teal-700 rounded-lg text-sm font-bold hover:bg-teal-100 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                View HLA Report
+                                            </a>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -149,6 +278,6 @@ export default function Patients() {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }

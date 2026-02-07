@@ -1,25 +1,110 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { auth, db, storage } from "@/lib/firebase";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function PatientProfile() {
     const [isEditing, setIsEditing] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [currentUid, setCurrentUid] = useState<string | null>(null);
     const [profile, setProfile] = useState({
-        name: "Samadhi Uluwaduge",
-        email: "samadhi.u@lifesync.lk",
-        phone: "+94 77 123 4567",
-        address: "123 Hope Lane, Colombo 07, Sri Lanka",
-        bloodGroup: "O+",
-        condition: "Chronic Kidney Disease (Stage 4)",
-        urgency: "High",
+        name: "",
+        email: "",
+        phone: "",
+        address: "",
+        bloodGroup: "",
+        condition: "Condition Not Listed",
+        urgency: "Moderate",
+        photoURL: "",
         notifications: true,
         twoFactor: false
     });
 
-    const handleSave = () => {
-        setIsEditing(false);
-        // In a real app, you'd call an API here
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                setCurrentUid(user.uid);
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    setProfile(prev => ({
+                        ...prev,
+                        name: data.fullName || "",
+                        email: data.email || user.email || "",
+                        phone: data.contact || "",
+                        address: data.address || "",
+                        bloodGroup: data.bloodGroup || "",
+                        photoURL: data.photoURL || "",
+                        // Patient specific fields might need to be added to registration or profile update
+                        condition: data.condition || "Condition Not Listed",
+                        urgency: data.urgency || "Moderate",
+                    }));
+                }
+                setLoading(false);
+            } else {
+                setLoading(false);
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    const handleSave = async () => {
+        if (!currentUid) return;
+
+        try {
+            await updateDoc(doc(db, "users", currentUid), {
+                fullName: profile.name,
+                contact: profile.phone,
+                address: profile.address,
+            });
+            setIsEditing(false);
+            alert("Profile updated successfully!");
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            alert("Failed to update profile.");
+        }
     };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !currentUid) return;
+
+        setUploading(true);
+        try {
+            const storageRef = ref(storage, `profile_pictures/${currentUid}`);
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+
+            await updateDoc(doc(db, "users", currentUid), {
+                photoURL: downloadURL
+            });
+
+            setProfile(prev => ({ ...prev, photoURL: downloadURL }));
+            alert("Profile picture updated!");
+        } catch (error) {
+            console.error("Error uploading image:", error);
+            alert("Failed to upload image.");
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#008080] mx-auto mb-4"></div>
+                    <p className="text-gray-600 font-medium">Loading...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="font-sans min-h-screen relative pb-20">
@@ -32,17 +117,38 @@ export default function PatientProfile() {
                 <div className="flex items-center gap-6">
                     <div className="relative group">
                         <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2rem] bg-gradient-to-br from-[#48D597] to-[#2E807D] p-1 shadow-2xl overflow-hidden group-hover:scale-105 transition-transform duration-500">
-                            <div className="w-full h-full rounded-[1.8rem] bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-4xl font-black border border-white/30">
-                                SU
-                            </div>
+                            {profile.photoURL ? (
+                                <img src={profile.photoURL} alt="Profile" className="w-full h-full object-cover rounded-[1.8rem]" />
+                            ) : (
+                                <div className="w-full h-full rounded-[1.8rem] bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-4xl font-black border border-white/30">
+                                    {profile.name.substring(0, 2).toUpperCase()}
+                                </div>
+                            )}
                         </div>
+                        {uploading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-[2rem]">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                            </div>
+                        )}
                         {isEditing && (
-                            <button className="absolute -bottom-2 -right-2 bg-white text-[#008080] p-2 rounded-xl shadow-lg border border-teal-50 hover:bg-teal-50 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                            </button>
+                            <>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    className="hidden"
+                                    accept="image/*"
+                                    onChange={handleImageUpload}
+                                />
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="absolute -bottom-2 -right-2 bg-white text-[#008080] p-2 rounded-xl shadow-lg border border-teal-50 hover:bg-teal-50 transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                </button>
+                            </>
                         )}
                     </div>
                     <div>

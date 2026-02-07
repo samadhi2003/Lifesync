@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 export default function DashboardLayout({
     children,
@@ -10,9 +12,19 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
+    const router = useRouter();
 
     const isActive = (path: string) => {
         return pathname === path ? "text-[#008080] border-b-2 border-[#008080] pb-1" : "hover:text-[#008080] transition-colors";
+    };
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            router.push("/");
+        } catch (error) {
+            console.error("Logout error:", error);
+        }
     };
 
     return (
@@ -56,7 +68,7 @@ export default function DashboardLayout({
 
                 {/* Logout Button */}
                 <div>
-                    <button className="bg-[#008080] hover:bg-[#006967] text-white text-sm font-bold py-2.5 px-6 rounded-lg transition-colors shadow-sm">
+                    <button onClick={handleLogout} className="bg-[#008080] hover:bg-[#006967] text-white text-sm font-bold py-2.5 px-6 rounded-lg transition-colors shadow-sm">
                         Logout
                     </button>
                 </div>

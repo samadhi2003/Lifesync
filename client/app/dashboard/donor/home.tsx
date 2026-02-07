@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { auth, db } from "@/lib/firebase";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 
 interface PatientRequest {
     id: number;
@@ -12,20 +15,52 @@ interface PatientRequest {
     image?: string;
 }
 
-const patientRequests: PatientRequest[] = [
-    { id: 1, name: "Samadhi Uluwaduge", bloodGroup: "O+", matchPercentage: 92, urgency: "Critical", location: "Colombo, LK" },
-    { id: 2, name: "Prabath Perera", bloodGroup: "O+", matchPercentage: 87, urgency: "High", location: "Kandy, LK" },
-    { id: 3, name: "Nimal Silva", bloodGroup: "O+", matchPercentage: 80, urgency: "High", location: "Galle, LK" },
-    { id: 4, name: "Kasun Jayawardena", bloodGroup: "A+", matchPercentage: 78, urgency: "Moderate", location: "Jaffna, LK" },
-    { id: 5, name: "Indika Rathnayake", bloodGroup: "O+", matchPercentage: 72, urgency: "Moderate", location: "Matara, LK" },
-    { id: 6, name: "Anura Bandara", bloodGroup: "O-", matchPercentage: 68, urgency: "Moderate", location: "Negombo, LK" },
-    { id: 7, name: "Dasun Shanaka", bloodGroup: "B+", matchPercentage: 55, urgency: "Moderate", location: "Kuruwita, LK" },
-    { id: 8, name: "Wanindu Hasaranga", bloodGroup: "AB+", matchPercentage: 48, urgency: "Moderate", location: "Galle, LK" },
-    { id: 9, name: "Charith Asalanka", bloodGroup: "O+", matchPercentage: 42, urgency: "Moderate", location: "Elpitiya, LK" },
-];
-
 export default function DonorHome() {
     const [selectedFilter, setSelectedFilter] = useState<"All" | "High" | "Medium" | "Low">("All");
+    const [patientRequests, setPatientRequests] = useState<any[]>([]);
+    const [currentUser, setCurrentUser] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Fetch current user (Donor)
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    setCurrentUser({ uid: user.uid, ...userDoc.data() });
+                }
+
+                // Fetch all Patients
+                const patientsSnapshot = await getDocs(collection(db, "users"));
+                const patientsList = patientsSnapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter((u: any) => u.role === "patient");
+
+                // Map Firestore data to the PatientRequest interface
+                const patientsWithMatch = patientsList.map((p: any) => {
+                    // Generate a deterministic "match percentage" based on name/email hash for consistency
+                    // This is temporary until the real ML algorithm is connected
+                    const pseudoRandom = (p.uid || "").split("").reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0) % 60 + 40;
+
+                    return {
+                        ...p,
+                        matchPercentage: pseudoRandom,
+                        location: p.address || "Location Not Provided",
+                        name: p.fullName || "Unknown Patient",
+                        urgency: p.urgency || "Moderate",
+                        bloodGroup: p.bloodGroup || "Unknown"
+                    };
+                });
+
+                setPatientRequests(patientsWithMatch);
+                setLoading(false);
+            } else {
+                setLoading(false);
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     const filteredRequests = patientRequests.filter(request => {
         if (selectedFilter === "All") return true;
@@ -34,6 +69,17 @@ export default function DonorHome() {
         if (selectedFilter === "Low") return request.matchPercentage < 60;
         return true;
     });
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#008080] mx-auto mb-4"></div>
+                    <p className="text-gray-600 font-medium">Loading...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="font-sans relative min-h-screen">
@@ -69,7 +115,7 @@ export default function DonorHome() {
                             </div>
 
                             <h1 className="text-3xl font-bold tracking-tight text-white drop-shadow-sm">
-                                Welcome back, Samadhi Uluwaduge
+                                Welcome back, {currentUser?.fullName || "Donor"}
                             </h1>
                         </div>
 

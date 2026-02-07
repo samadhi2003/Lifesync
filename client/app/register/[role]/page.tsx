@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { auth, db, storage } from "@/lib/firebase";
 
 export default function RegisterStep1() {
     const params = useParams();
@@ -13,6 +17,17 @@ export default function RegisterStep1() {
     const [step, setStep] = useState(1);
 
     const handleNext = () => {
+        // Clear errors before validation
+        setFieldErrors({});
+
+        // Validate current step
+        if (step === 1 && !validateStep1()) {
+            return;
+        }
+        if (step === 2 && !isDoctor && !validateStep2()) {
+            return;
+        }
+
         setStep(step + 1);
     };
 
@@ -20,7 +35,212 @@ export default function RegisterStep1() {
         setStep(step - 1);
     };
 
+    const router = useRouter();
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    // Common State
+    const [fullName, setFullName] = useState("");
+    const [contact, setContact] = useState("");
+
+    // Patient/Donor State
+    const [nic, setNic] = useState("");
+    const [gender, setGender] = useState("");
+    const [dob, setDob] = useState("");
+    const [address, setAddress] = useState("");
+    const [bloodGroup, setBloodGroup] = useState("");
+    const [urgency, setUrgency] = useState("");
     const [onDialysis, setOnDialysis] = useState<boolean | null>(null);
+
+    // Doctor State
+    const [medicalLicense, setMedicalLicense] = useState("");
+    const [hospitalName, setHospitalName] = useState("");
+
+    // File Upload State
+    const [hlaReportFile, setHlaReportFile] = useState<File | null>(null);
+    const [medicalReportFile, setMedicalReportFile] = useState<File | null>(null);
+
+    // Field-specific errors
+    const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+
+    // Validation Functions
+    const validateEmail = (email: string): boolean => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    };
+
+    const validatePassword = (password: string): boolean => {
+        return password.length >= 6;
+    };
+
+    const validateNIC = (nic: string): boolean => {
+        // Sri Lankan NIC: 9 digits + V or 12 digits
+        const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+        return nicRegex.test(nic);
+    };
+
+    const validateContact = (contact: string): boolean => {
+        // 10 digit phone number
+        const contactRegex = /^[0-9]{10}$/;
+        return contactRegex.test(contact);
+    };
+
+    const validateStep1 = (): boolean => {
+        const errors: { [key: string]: string } = {};
+
+        if (!fullName || fullName.trim().length < 3) {
+            errors.fullName = "Full name must be at least 3 characters";
+        }
+
+        if (isDoctor) {
+            if (!medicalLicense || medicalLicense.trim().length === 0) {
+                errors.medicalLicense = "Medical license is required";
+            }
+            if (!hospitalName || hospitalName.trim().length === 0) {
+                errors.hospitalName = "Hospital name is required";
+            }
+            if (!contact || !validateContact(contact)) {
+                errors.contact = "Valid 10-digit contact number is required";
+            }
+        } else {
+            if (!nic || !validateNIC(nic)) {
+                errors.nic = "Valid NIC is required (9 digits + V or 12 digits)";
+            }
+            if (!gender) {
+                errors.gender = "Please select a gender";
+            }
+            if (!dob) {
+                errors.dob = "Date of birth is required";
+            }
+            if (!address || address.trim().length < 10) {
+                errors.address = "Address must be at least 10 characters";
+            }
+            if (!contact || !validateContact(contact)) {
+                errors.contact = "Valid 10-digit contact number is required";
+            }
+        }
+
+        setFieldErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const validateStep2 = (): boolean => {
+        const errors: { [key: string]: string } = {};
+
+        if (!bloodGroup) {
+            errors.bloodGroup = "Please select a blood group";
+        }
+        if (!urgency) {
+            errors.urgency = "Please select an urgency level";
+        }
+        if (onDialysis === null) {
+            errors.onDialysis = "Please indicate dialysis status";
+        }
+
+        setFieldErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const validateStep3 = (): boolean => {
+        const errors: { [key: string]: string } = {};
+
+        if (!email || !validateEmail(email)) {
+            errors.email = "Valid email is required";
+        }
+        if (!password || !validatePassword(password)) {
+            errors.password = "Password must be at least 6 characters";
+        }
+        if (password !== confirmPassword) {
+            errors.confirmPassword = "Passwords do not match";
+        }
+
+        setFieldErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const handleHlaReportChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setHlaReportFile(e.target.files[0]);
+        }
+    };
+
+    const handleMedicalReportChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setMedicalReportFile(e.target.files[0]);
+        }
+    };
+
+    const handleRegister = async () => {
+        setError(null);
+
+        // Validate final step
+        if (!validateStep3()) {
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // Prepare data to save
+            const userData: any = {
+                uid: user.uid,
+                email: email,
+                role: roleRaw, // 'patient', 'donor', or 'doctor'
+                fullName: fullName,
+                contact: contact,
+                createdAt: new Date().toISOString()
+            };
+
+            if (isDoctor) {
+                userData.medicalLicense = medicalLicense;
+                userData.hospitalName = hospitalName;
+            } else {
+                userData.nic = nic;
+                userData.gender = gender;
+                userData.dob = dob;
+                userData.address = address;
+                userData.bloodGroup = bloodGroup;
+                userData.urgency = urgency;
+                userData.onDialysis = onDialysis;
+
+                // Upload files if provided
+                if (hlaReportFile) {
+                    const hlaRef = ref(storage, `reports/${user.uid}/hla-report.pdf`);
+                    await uploadBytes(hlaRef, hlaReportFile);
+                    userData.hlaReportURL = await getDownloadURL(hlaRef);
+                }
+
+                if (medicalReportFile) {
+                    const medicalRef = ref(storage, `reports/${user.uid}/medical-report.pdf`);
+                    await uploadBytes(medicalRef, medicalReportFile);
+                    userData.medicalReportURL = await getDownloadURL(medicalRef);
+                }
+            }
+
+            // Save to Firestore
+            await setDoc(doc(db, "users", user.uid), userData);
+
+            // Redirect based on role
+            if (roleRaw === 'donor') {
+                router.push("/dashboard/donor");
+            } else if (roleRaw === 'doctor') {
+                router.push("/dashboard/doctor");
+            } else {
+                router.push("/dashboard/patient");
+            }
+
+        } catch (err: any) {
+            console.error("Registration error:", err);
+            setError(err.message || "Failed to register");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#E6F7F8] flex flex-col items-center py-12 px-4 font-sans">
@@ -60,6 +280,12 @@ export default function RegisterStep1() {
                     {isDoctor && step === 2 ? 'Account Details' : (!isDoctor && step === 2 ? 'Medical Information' : (!isDoctor && step === 3 ? 'Account Details' : (isDoctor ? 'Doctor registration' : 'Basic Information')))}
                 </h2>
 
+                {error && (
+                    <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+                        {error}
+                    </div>
+                )}
+
                 <form className="space-y-6">
 
                     {/* Step 1 Content (Doctor Step 1 or Others Step 1) */}
@@ -69,9 +295,15 @@ export default function RegisterStep1() {
                                 <label className="block text-gray-500 text-xs font-semibold ml-1">Full Name</label>
                                 <input
                                     type="text"
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
                                     placeholder={isDoctor ? "" : "Enter your full Name"}
-                                    className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm"
+                                    className={`w-full bg-[#F5F5F5] border rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm ${fieldErrors.fullName ? 'border-red-500' : 'border-transparent'
+                                        }`}
                                 />
+                                {fieldErrors.fullName && (
+                                    <p className="text-red-500 text-xs ml-1">{fieldErrors.fullName}</p>
+                                )}
                             </div>
 
                             {isDoctor ? (
@@ -80,22 +312,36 @@ export default function RegisterStep1() {
                                         <label className="block text-gray-500 text-xs font-semibold ml-1">Medical License Number</label>
                                         <input
                                             type="text"
-                                            className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm"
+                                            value={medicalLicense}
+                                            onChange={(e) => setMedicalLicense(e.target.value)}
+                                            className={`w-full bg-[#F5F5F5] border rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm ${fieldErrors.medicalLicense ? 'border-red-500' : 'border-transparent'
+                                                }`}
                                         />
+                                        {fieldErrors.medicalLicense && (
+                                            <p className="text-red-500 text-xs ml-1">{fieldErrors.medicalLicense}</p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
                                         <label className="block text-gray-500 text-xs font-semibold ml-1">Hospital/ Clinic Name</label>
                                         <input
                                             type="text"
-                                            className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm"
+                                            value={hospitalName}
+                                            onChange={(e) => setHospitalName(e.target.value)}
+                                            className={`w-full bg-[#F5F5F5] border rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm ${fieldErrors.hospitalName ? 'border-red-500' : 'border-transparent'
+                                                }`}
                                         />
+                                        {fieldErrors.hospitalName && (
+                                            <p className="text-red-500 text-xs ml-1">{fieldErrors.hospitalName}</p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
                                         <label className="block text-gray-500 text-xs font-semibold ml-1">Email</label>
                                         <input
                                             type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
                                             className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm"
                                         />
                                     </div>
@@ -104,8 +350,14 @@ export default function RegisterStep1() {
                                         <label className="block text-gray-500 text-xs font-semibold ml-1">Phone Number</label>
                                         <input
                                             type="tel"
-                                            className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm"
+                                            value={contact}
+                                            onChange={(e) => setContact(e.target.value)}
+                                            className={`w-full bg-[#F5F5F5] border rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm ${fieldErrors.contact ? 'border-red-500' : 'border-transparent'
+                                                }`}
                                         />
+                                        {fieldErrors.contact && (
+                                            <p className="text-red-500 text-xs ml-1">{fieldErrors.contact}</p>
+                                        )}
                                     </div>
                                 </>
                             ) : (
@@ -115,19 +367,26 @@ export default function RegisterStep1() {
                                         <label className="block text-gray-500 text-xs font-semibold ml-1">NIC</label>
                                         <input
                                             type="text"
+                                            value={nic}
+                                            onChange={(e) => setNic(e.target.value)}
                                             placeholder="Enter your NIC number"
-                                            className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm"
+                                            className={`w-full bg-[#F5F5F5] border rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm ${fieldErrors.nic ? 'border-red-500' : 'border-transparent'
+                                                }`}
                                         />
+                                        {fieldErrors.nic && (
+                                            <p className="text-red-500 text-xs ml-1">{fieldErrors.nic}</p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
                                         <label className="block text-gray-500 text-xs font-semibold ml-1">Gender</label>
                                         <div className="relative">
-                                            <select defaultValue="" className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white appearance-none transition-all cursor-pointer text-sm">
+                                            <select value={gender} onChange={(e) => setGender(e.target.value)} className={`w-full bg-[#F5F5F5] border rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white appearance-none transition-all cursor-pointer text-sm ${fieldErrors.gender ? 'border-red-500' : 'border-transparent'
+                                                }`}>
                                                 <option value="" disabled>Select gender</option>
-                                                <option value="male">Male</option>
-                                                <option value="female">Female</option>
-                                                <option value="other">Other</option>
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                                <option value="Other">Other</option>
                                             </select>
                                             <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400">
                                                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,41 +394,64 @@ export default function RegisterStep1() {
                                                 </svg>
                                             </div>
                                         </div>
+                                        {fieldErrors.gender && (
+                                            <p className="text-red-500 text-xs ml-1">{fieldErrors.gender}</p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
                                         <label className="block text-gray-500 text-xs font-semibold ml-1">Date of Birth</label>
                                         <input
                                             type="text"
+                                            value={dob}
+                                            onChange={(e) => setDob(e.target.value)}
                                             placeholder="dd/mm/yy"
                                             onFocus={(e) => e.target.type = 'date'}
                                             onBlur={(e) => e.target.type = 'text'}
-                                            className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm"
+                                            className={`w-full bg-[#F5F5F5] border rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm ${fieldErrors.dob ? 'border-red-500' : 'border-transparent'
+                                                }`}
                                         />
+                                        {fieldErrors.dob && (
+                                            <p className="text-red-500 text-xs ml-1">{fieldErrors.dob}</p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
                                         <label className="block text-gray-500 text-xs font-semibold ml-1">Adreess</label>
                                         <input
                                             type="text"
+                                            value={address}
+                                            onChange={(e) => setAddress(e.target.value)}
                                             placeholder="Enter your Adreess"
-                                            className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm"
+                                            className={`w-full bg-[#F5F5F5] border rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm ${fieldErrors.address ? 'border-red-500' : 'border-transparent'
+                                                }`}
                                         />
+                                        {fieldErrors.address && (
+                                            <p className="text-red-500 text-xs ml-1">{fieldErrors.address}</p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
                                         <label className="block text-gray-500 text-xs font-semibold ml-1">Contact Number</label>
                                         <input
                                             type="tel"
+                                            value={contact}
+                                            onChange={(e) => setContact(e.target.value)}
                                             placeholder="Enter your Contact number"
-                                            className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm"
+                                            className={`w-full bg-[#F5F5F5] border rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm ${fieldErrors.contact ? 'border-red-500' : 'border-transparent'
+                                                }`}
                                         />
+                                        {fieldErrors.contact && (
+                                            <p className="text-red-500 text-xs ml-1">{fieldErrors.contact}</p>
+                                        )}
                                     </div>
 
                                     <div className="space-y-2">
                                         <label className="block text-gray-500 text-xs font-semibold ml-1">Email</label>
                                         <input
                                             type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
                                             placeholder="Enter your Email"
                                             className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm"
                                         />
@@ -185,7 +467,8 @@ export default function RegisterStep1() {
                             <div className="space-y-2">
                                 <label className="block text-gray-500 text-xs font-semibold ml-1">Blood Group</label>
                                 <div className="relative">
-                                    <select defaultValue="" className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white appearance-none transition-all cursor-pointer text-sm">
+                                    <select value={bloodGroup} onChange={(e) => setBloodGroup(e.target.value)} className={`w-full bg-[#F5F5F5] border rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white appearance-none transition-all cursor-pointer text-sm ${fieldErrors.bloodGroup ? 'border-red-500' : 'border-transparent'
+                                        }`}>
                                         <option value="" disabled>Select your blood group</option>
                                         <option value="A+">A+</option>
                                         <option value="A-">A-</option>
@@ -202,6 +485,9 @@ export default function RegisterStep1() {
                                         </svg>
                                     </div>
                                 </div>
+                                {fieldErrors.bloodGroup && (
+                                    <p className="text-red-500 text-xs ml-1">{fieldErrors.bloodGroup}</p>
+                                )}
                             </div>
 
                             <div className="space-y-2">
@@ -228,17 +514,21 @@ export default function RegisterStep1() {
                                         No
                                     </button>
                                 </div>
+                                {fieldErrors.onDialysis && (
+                                    <p className="text-red-500 text-xs ml-1">{fieldErrors.onDialysis}</p>
+                                )}
                             </div>
 
                             <div className="space-y-2">
                                 <label className="block text-gray-500 text-xs font-semibold ml-1">Urgency Level</label>
                                 <div className="relative">
-                                    <select defaultValue="" className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white appearance-none transition-all cursor-pointer text-sm">
+                                    <select value={urgency} onChange={(e) => setUrgency(e.target.value)} className={`w-full bg-[#F5F5F5] border rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white appearance-none transition-all cursor-pointer text-sm ${fieldErrors.urgency ? 'border-red-500' : 'border-transparent'
+                                        }`}>
                                         <option value="" disabled>Select urgency level</option>
-                                        <option value="low">Low</option>
-                                        <option value="medium">Medium</option>
-                                        <option value="high">High</option>
-                                        <option value="critical">Critical</option>
+                                        <option value="Low">Low</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="High">High</option>
+                                        <option value="Critical">Critical</option>
                                     </select>
                                     <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400">
                                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,27 +536,54 @@ export default function RegisterStep1() {
                                         </svg>
                                     </div>
                                 </div>
+                                {fieldErrors.urgency && (
+                                    <p className="text-red-500 text-xs ml-1">{fieldErrors.urgency}</p>
+                                )}
                             </div>
 
                             <div className="space-y-2">
-                                <label className="block text-gray-500 text-xs font-semibold ml-1">HLA Report Uploaded</label>
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#008080] transition-colors bg-white">
+                                <label className="block text-gray-500 text-xs font-semibold ml-1">HLA Report Upload</label>
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#008080] transition-colors bg-white relative">
+                                    <input
+                                        type="file"
+                                        accept=".pdf"
+                                        onChange={handleHlaReportChange}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    />
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                     </svg>
-                                    <p className="text-gray-400 text-xs">Click to upload or drag and drop</p>
-                                    <p className="text-gray-300 text-[10px] mt-1">PDF only</p>
+                                    {hlaReportFile ? (
+                                        <p className="text-[#008080] text-xs font-semibold">{hlaReportFile.name}</p>
+                                    ) : (
+                                        <>
+                                            <p className="text-gray-400 text-xs">Click to upload or drag and drop</p>
+                                            <p className="text-gray-300 text-[10px] mt-1">PDF only</p>
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="block text-gray-500 text-xs font-semibold ml-1">Medical Report Uploaded</label>
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#008080] transition-colors bg-white">
+                                <label className="block text-gray-500 text-xs font-semibold ml-1">Medical Report Upload</label>
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#008080] transition-colors bg-white relative">
+                                    <input
+                                        type="file"
+                                        accept=".pdf"
+                                        onChange={handleMedicalReportChange}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    />
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                     </svg>
-                                    <p className="text-gray-400 text-xs">Click to upload or drag and drop</p>
-                                    <p className="text-gray-300 text-[10px] mt-1">PDF only</p>
+                                    {medicalReportFile ? (
+                                        <p className="text-[#008080] text-xs font-semibold">{medicalReportFile.name}</p>
+                                    ) : (
+                                        <>
+                                            <p className="text-gray-400 text-xs">Click to upload or drag and drop</p>
+                                            <p className="text-gray-300 text-[10px] mt-1">PDF only</p>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </>
@@ -276,30 +593,48 @@ export default function RegisterStep1() {
                     {((isDoctor && step === 2) || (!isDoctor && step === 3)) && (
                         <>
                             <div className="space-y-2">
-                                <label className="block text-gray-500 text-xs font-semibold ml-1">Username</label>
+                                <label className="block text-gray-500 text-xs font-semibold ml-1">Email</label>
                                 <input
-                                    type="text"
-                                    placeholder="Enter your Username"
-                                    className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="Enter your Email"
+                                    className={`w-full bg-[#F5F5F5] border rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm ${fieldErrors.email ? 'border-red-500' : 'border-transparent'
+                                        }`}
                                 />
+                                {fieldErrors.email && (
+                                    <p className="text-red-500 text-xs ml-1">{fieldErrors.email}</p>
+                                )}
                             </div>
 
                             <div className="space-y-2">
                                 <label className="block text-gray-500 text-xs font-semibold ml-1">Password</label>
                                 <input
                                     type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Enter your Password"
-                                    className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm"
+                                    className={`w-full bg-[#F5F5F5] border rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm ${fieldErrors.password ? 'border-red-500' : 'border-transparent'
+                                        }`}
                                 />
+                                {fieldErrors.password && (
+                                    <p className="text-red-500 text-xs ml-1">{fieldErrors.password}</p>
+                                )}
                             </div>
 
                             <div className="space-y-2">
                                 <label className="block text-gray-500 text-xs font-semibold ml-1">Confirm Password</label>
                                 <input
                                     type="password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
                                     placeholder="Confirm your Password"
-                                    className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm"
+                                    className={`w-full bg-[#F5F5F5] border rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm ${fieldErrors.confirmPassword ? 'border-red-500' : 'border-transparent'
+                                        }`}
                                 />
+                                {fieldErrors.confirmPassword && (
+                                    <p className="text-red-500 text-xs ml-1">{fieldErrors.confirmPassword}</p>
+                                )}
                             </div>
                         </>
                     )}
@@ -313,12 +648,14 @@ export default function RegisterStep1() {
                             onClick={() => {
                                 if (step < (isDoctor ? 2 : 3)) {
                                     handleNext();
+                                } else {
+                                    handleRegister();
                                 }
-                                // else submit
                             }}
-                            className={`${step > 1 ? 'w-full' : 'w-full'} bg-[#0E7A75] text-white font-bold py-4 rounded-lg hover:bg-[#0B635F] transition-colors shadow-lg`}
+                            disabled={loading}
+                            className={`${step > 1 ? 'w-full' : 'w-full'} bg-[#0E7A75] text-white font-bold py-4 rounded-lg hover:bg-[#0B635F] transition-colors shadow-lg ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                         >
-                            {step === (isDoctor ? 2 : 3) ? 'Register' : 'Next'}
+                            {loading ? 'Registering...' : (step === (isDoctor ? 2 : 3) ? 'Register' : 'Next')}
                         </button>
                     </div>
 

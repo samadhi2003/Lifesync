@@ -1,25 +1,69 @@
 "use client";
 
-import { useState } from "react";
-
+import { useState, useEffect } from "react";
+import { auth, db } from "@/lib/firebase";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function PatientDashboard() {
     const [filter, setFilter] = useState("All");
+    const [donors, setDonors] = useState<any[]>([]);
+    const [currentUser, setCurrentUser] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
-    // Mock Data for Donors
-    const donors = [
-        { id: 1, name: "Samadhi", bloodGroup: "O+", match: 92, status: "PENDING", location: "Colombo, LK", urgency: "Critical" },
-        { id: 2, name: "Samadhi", bloodGroup: "O+", match: 87, status: "ACCEPTED", location: "Kandy, LK", urgency: "High" },
-        { id: 3, name: "Samadhi", bloodGroup: "O+", match: 80, status: "ACCEPTED", location: "Galle, LK", urgency: "High" },
-        { id: 4, name: "Samadhi", bloodGroup: "A+", match: 78, status: "PENDING", location: "Jaffna, LK", urgency: "Moderate" },
-        { id: 5, name: "Samadhi", bloodGroup: "O+", match: 72, status: "PENDING", location: "Matara, LK", urgency: "Moderate" },
-        { id: 6, name: "Samadhi", bloodGroup: "O-", match: 68, status: "PENDING", location: "Negombo, LK", urgency: "Moderate" },
-        { id: 7, name: "Samadhi", bloodGroup: "O+", match: 92, status: "PENDING", location: "Colombo, LK", urgency: "Critical" },
-        { id: 8, name: "Samadhi", bloodGroup: "O+", match: 87, status: "ACCEPTED", location: "Kandy, LK", urgency: "High" },
-        { id: 9, name: "Samadhi", bloodGroup: "O+", match: 80, status: "PENDING", location: "Galle, LK", urgency: "High" },
-        { id: 10, name: "Samadhi", bloodGroup: "A+", match: 45, status: "PENDING", location: "Jaffna, LK", urgency: "Moderate" },
-        { id: 11, name: "Samadhi", bloodGroup: "O+", match: 30, status: "PENDING", location: "Matara, LK", urgency: "Moderate" },
-    ];
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // Fetch current user data
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    setCurrentUser({ uid: user.uid, ...userDoc.data() });
+                } else {
+                    // Fallback if Firestore profile doesn't exist yet
+                    setCurrentUser({
+                        uid: user.uid,
+                        fullName: user.displayName || "User",
+                        email: user.email,
+                        role: "patient"
+                    });
+                }
+
+                // Fetch all donors from Firestore
+                const donorsSnapshot = await getDocs(collection(db, "users"));
+                const donorsList = donorsSnapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter((u: any) => u.role === "donor"); // Only get donors
+
+                setDonors(donorsList);
+                setLoading(false);
+            } else {
+                setLoading(false);
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#00796B] mx-auto mb-4"></div>
+                    <p className="text-gray-600 font-medium">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!currentUser) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <p className="text-gray-600 font-medium">Please log in to view your dashboard</p>
+                </div>
+            </div>
+        );
+    }
 
     const getProgressColor = (match: number) => {
         if (match >= 80) return "bg-[#00BFA5]"; // Teal Green
@@ -30,10 +74,13 @@ export default function PatientDashboard() {
 
 
     const filteredDonors = donors.filter(donor => {
+        // For now show all donors - you can add match scoring logic later
         if (filter === "All") return true;
-        if (filter === "High") return donor.match >= 80;
-        if (filter === "Medium") return donor.match >= 50 && donor.match < 80;
-        if (filter === "Low") return donor.match < 50;
+        // Placeholder for match levels - will need match scoring algorithm
+        const matchScore = Math.floor(Math.random() * 100); // Temporary random
+        if (filter === "High") return matchScore >= 80;
+        if (filter === "Medium") return matchScore >= 50 && matchScore < 80;
+        if (filter === "Low") return matchScore < 50;
         return true;
     });
 
@@ -58,9 +105,9 @@ export default function PatientDashboard() {
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                                 </svg>
                             </div>
-                            <h1 className="text-3xl font-bold tracking-tight text-white drop-shadow-sm">Welcome back, Samadhi Uluwaduge</h1>
+                            <h1 className="text-3xl font-bold tracking-tight text-white drop-shadow-sm">Welcome back, {currentUser?.fullName || "User"}</h1>
                         </div>
-                        <p className="text-white/90 ml-[64px] text-sm font-medium">We found 6 potential matches for you</p>
+                        <p className="text-white/90 ml-[64px] text-sm font-medium">We found {donors.length} potential matches for you</p>
                     </div>
                 </div>
             </div>
@@ -108,13 +155,13 @@ export default function PatientDashboard() {
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-gray-900 text-xl tracking-tight">{donor.name}</h3>
+                                    <h3 className="font-bold text-gray-900 text-xl tracking-tight">{donor.fullName || "Donor"}</h3>
                                     <div className="flex items-center gap-1.5 mt-0.5">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
-                                        <p className="text-gray-400 text-xs font-semibold">{donor.location}</p>
+                                        <p className="text-gray-400 text-xs font-semibold">{donor.address || "Location unknown"}</p>
                                     </div>
                                 </div>
                             </div>
@@ -124,13 +171,11 @@ export default function PatientDashboard() {
                         <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
                             <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100/50">
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Blood Type</span>
-                                <p className="text-[#00796B] text-xl font-black">{donor.bloodGroup}</p>
+                                <p className="text-[#00796B] text-xl font-black">{donor.bloodGroup || "N/A"}</p>
                             </div>
                             <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100/50">
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Match Level</span>
-                                <p className={`text-xl font-black ${donor.match >= 80 ? 'text-teal-600' : 'text-orange-600'}`}>
-                                    {donor.match >= 80 ? 'Elite' : 'Strong'}
-                                </p>
+                                <p className="text-xl font-black text-teal-600">Elite</p>
                             </div>
                         </div>
 
@@ -139,15 +184,14 @@ export default function PatientDashboard() {
                             <div className="flex justify-between items-end mb-3">
                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Compatibility</p>
                                 <div className="flex items-baseline gap-0.5">
-                                    <span className="text-2xl font-black text-gray-900">{donor.match}</span>
+                                    <span className="text-2xl font-black text-gray-900">95</span>
                                     <span className="text-xs font-bold text-[#00796B]">%</span>
                                 </div>
                             </div>
                             <div className="w-full bg-gray-100/80 rounded-full h-2.5 p-0.5 shadow-inner">
                                 <div
-                                    className={`h-full rounded-full shadow-lg transition-all duration-1000 ease-out relative overflow-hidden ${donor.match >= 80 ? 'bg-gradient-to-r from-[#26A69A] to-[#4DB6AC]' : 'bg-gradient-to-r from-[#FFB74D] to-[#FFA726]'
-                                        }`}
-                                    style={{ width: `${donor.match}%` }}
+                                    className="h-full rounded-full shadow-lg transition-all duration-1000 ease-out relative overflow-hidden bg-gradient-to-r from-[#26A69A] to-[#4DB6AC]"
+                                    style={{ width: "95%" }}
                                 >
                                     {/* Shimmer effect on progress bar */}
                                     <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
