@@ -27,54 +27,51 @@ export default function DashboardLayout({
         }
     };
 
+    const isDoctorPath = pathname?.startsWith("/dashboard/doctor");
+
     return (
         <div className="min-h-screen bg-slate-50">
-            {/* Navbar */}
-            <nav className="bg-white border-b border-gray-100 py-4 px-6 md:px-12 flex justify-between items-center sticky top-0 z-50">
-                <div className="flex items-center gap-2">
-                    {/* Logo */}
-                    <div className="relative h-10 w-10">
-                        <Image src="/logo.png" alt="LifeSync Logo" fill className="object-contain" />
+            {/* Navbar - Hidden for Doctor Dashboard as it has its own layout */}
+            {!isDoctorPath && (
+                <nav className="bg-white border-b border-gray-100 py-4 px-6 md:px-12 flex justify-between items-center sticky top-0 z-50">
+                    <div className="flex items-center gap-2">
+                        {/* Logo */}
+                        <div className="relative h-10 w-10">
+                            <Image src="/logo.png" alt="LifeSync Logo" fill className="object-contain" />
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="font-bold text-lg text-[#006967] leading-tight">LIFESYNC</span>
+                            <span className="text-[6px] text-[#008080] opacity-70 uppercase tracking-widest font-medium">Hope Match Save Lives</span>
+                        </div>
                     </div>
-                    <div className="flex flex-col">
-                        <span className="font-bold text-lg text-[#006967] leading-tight">LIFESYNC</span>
-                        <span className="text-[6px] text-[#008080] opacity-70 uppercase tracking-widest font-medium">Hope Match Save Lives</span>
+
+                    {/* Nav Links */}
+                    <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-gray-500">
+                        {pathname?.startsWith("/dashboard/donor") ? (
+                            <>
+                                <Link href="/dashboard/donor" className={isActive("/dashboard/donor")}>Home</Link>
+                                <Link href="/dashboard/donor/matches" className={isActive("/dashboard/donor/matches")}>Matches</Link>
+                                <Link href="/dashboard/donor/profile" className={isActive("/dashboard/donor/profile")}>Profile</Link>
+                            </>
+                        ) : (
+                            <>
+                                <Link href="/dashboard/patient" className={isActive("/dashboard/patient")}>Home</Link>
+                                <Link href="/dashboard/patient/matches" className={isActive("/dashboard/patient/matches")}>Matches</Link>
+                                <Link href="/dashboard/patient/profile" className={isActive("/dashboard/patient/profile")}>Profile</Link>
+                            </>
+                        )}
                     </div>
-                </div>
 
-                {/* Nav Links */}
-                <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-gray-500">
-                    {pathname?.startsWith("/dashboard/donor") ? (
-                        <>
-                            <Link href="/dashboard/donor" className={isActive("/dashboard/donor")}>Home</Link>
-                            <Link href="/dashboard/donor/matches" className={isActive("/dashboard/donor/matches")}>Matches</Link>
-                            <Link href="/dashboard/donor/profile" className={isActive("/dashboard/donor/profile")}>Profile</Link>
-                        </>
-                    ) : pathname?.startsWith("/dashboard/doctor") ? (
-                        <>
-                            <Link href="/dashboard/doctor" className={isActive("/dashboard/doctor")}>Home</Link>
-                            <Link href="/dashboard/doctor/find-donors" className={isActive("/dashboard/doctor/find-donors")}>Find donors</Link>
-                            <Link href="/dashboard/doctor/patients" className={isActive("/dashboard/doctor/patients")}>Patients</Link>
-                            <Link href="/dashboard/doctor/profile" className={isActive("/dashboard/doctor/profile")}>Profile</Link>
-                        </>
-                    ) : (
-                        <>
-                            <Link href="/dashboard/patient" className={isActive("/dashboard/patient")}>Home</Link>
-                            <Link href="/dashboard/patient/matches" className={isActive("/dashboard/patient/matches")}>Matches</Link>
-                            <Link href="/dashboard/patient/profile" className={isActive("/dashboard/patient/profile")}>Profile</Link>
-                        </>
-                    )}
-                </div>
+                    {/* Logout Button */}
+                    <div>
+                        <button onClick={handleLogout} className="bg-[#008080] hover:bg-[#006967] text-white text-sm font-bold py-2.5 px-6 rounded-lg transition-colors shadow-sm">
+                            Logout
+                        </button>
+                    </div>
+                </nav>
+            )}
 
-                {/* Logout Button */}
-                <div>
-                    <button onClick={handleLogout} className="bg-[#008080] hover:bg-[#006967] text-white text-sm font-bold py-2.5 px-6 rounded-lg transition-colors shadow-sm">
-                        Logout
-                    </button>
-                </div>
-            </nav>
-
-            <main className="mx-auto max-w-7xl p-6 md:p-12">
+            <main className={isDoctorPath ? "" : "mx-auto max-w-7xl p-6 md:p-12"}>
                 {children}
             </main>
         </div>
