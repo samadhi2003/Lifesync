@@ -61,6 +61,7 @@ export default function RegisterStep1() {
 
     // File Upload State
     const [hlaReportFile, setHlaReportFile] = useState<File | null>(null);
+    const [medicalReportFile, setMedicalReportFile] = useState<File | null>(null);
 
     // Field-specific errors
     const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
@@ -166,6 +167,12 @@ export default function RegisterStep1() {
         }
     };
 
+    const handleMedicalReportChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setMedicalReportFile(e.target.files[0]);
+        }
+    };
+
 
     const handleRegister = async () => {
         setError(null);
@@ -207,6 +214,12 @@ export default function RegisterStep1() {
                     const hlaRef = ref(storage, `reports/${user.uid}/hla-report.pdf`);
                     await uploadBytes(hlaRef, hlaReportFile);
                     userData.hlaReportURL = await getDownloadURL(hlaRef);
+                }
+
+                if (medicalReportFile) {
+                    const medicalRef = ref(storage, `reports/${user.uid}/medical-report.pdf`);
+                    await uploadBytes(medicalRef, medicalReportFile);
+                    userData.medicalReportURL = await getDownloadURL(medicalRef);
                 }
 
             }
@@ -544,6 +557,29 @@ export default function RegisterStep1() {
                                     </svg>
                                     {hlaReportFile ? (
                                         <p className="text-[#008080] text-xs font-semibold">{hlaReportFile.name}</p>
+                                    ) : (
+                                        <>
+                                            <p className="text-gray-400 text-xs">Click to upload or drag and drop</p>
+                                            <p className="text-gray-300 text-[10px] mt-1">PDF only</p>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-gray-500 text-xs font-semibold ml-1">Medical Report Upload</label>
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#008080] transition-colors bg-white relative">
+                                    <input
+                                        type="file"
+                                        accept=".pdf"
+                                        onChange={handleMedicalReportChange}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    />
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                    </svg>
+                                    {medicalReportFile ? (
+                                        <p className="text-[#008080] text-xs font-semibold">{medicalReportFile.name}</p>
                                     ) : (
                                         <>
                                             <p className="text-gray-400 text-xs">Click to upload or drag and drop</p>

@@ -21,6 +21,8 @@ export default function PatientProfile() {
         condition: "Condition Not Listed",
         urgency: "Moderate",
         photoURL: "",
+        hlaReportURL: "",
+        medicalReportURL: "",
         notifications: true,
         twoFactor: false
     });
@@ -43,6 +45,8 @@ export default function PatientProfile() {
                         // Patient specific fields might need to be added to registration or profile update
                         condition: data.condition || "Condition Not Listed",
                         urgency: data.urgency || "Moderate",
+                        hlaReportURL: data.hlaReportURL || "",
+                        medicalReportURL: data.medicalReportURL || "",
                     }));
                 }
                 setLoading(false);
@@ -90,6 +94,33 @@ export default function PatientProfile() {
         } catch (error) {
             console.error("Error uploading image:", error);
             alert("Failed to upload image.");
+        } finally {
+            setUploading(false);
+        }
+    };
+    
+    const handleReportUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'hla' | 'medical') => {
+        const file = e.target.files?.[0];
+        if (!file || !currentUid) return;
+
+        setUploading(true);
+        try {
+            const fileName = type === 'hla' ? 'hla-report.pdf' : 'medical-report.pdf';
+            const storageRef = ref(storage, `reports/${currentUid}/${fileName}`);
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+
+            const updateData: any = {};
+            if (type === 'hla') updateData.hlaReportURL = downloadURL;
+            else updateData.medicalReportURL = downloadURL;
+
+            await updateDoc(doc(db, "users", currentUid), updateData);
+
+            setProfile(prev => ({ ...prev, [type === 'hla' ? 'hlaReportURL' : 'medicalReportURL']: downloadURL }));
+            alert(`${type === 'hla' ? 'HLA' : 'Medical'} report updated successfully!`);
+        } catch (error) {
+            console.error(`Error uploading ${type} report:`, error);
+            alert(`Failed to upload ${type} report.`);
         } finally {
             setUploading(false);
         }
@@ -243,7 +274,7 @@ export default function PatientProfile() {
                                 <span className="text-[10px] font-bold text-orange-600/60 uppercase tracking-widest block mb-1">Current Condition</span>
                                 <p className="text-gray-900 text-xl font-black">{profile.condition}</p>
                             </div>
-                            <div className="md:col-span-3">
+                            <div className="md:col-span-3 space-y-4">
                                 <div className="p-5 bg-gradient-to-r from-teal-500/10 to-transparent rounded-[1.5rem] border border-teal-500/10 flex items-center justify-between">
                                     <div className="flex items-center gap-4">
                                         <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-[#008080] shadow-sm">
@@ -252,11 +283,46 @@ export default function PatientProfile() {
                                             </svg>
                                         </div>
                                         <div>
-                                            <h4 className="text-gray-900 font-bold">Medical Documentation</h4>
-                                            <p className="text-gray-500 text-xs">Verified by LifeSync Medical Board</p>
+                                            <h4 className="text-gray-900 font-bold">HLA Documentation</h4>
+                                            <p className="text-gray-500 text-xs">{profile.hlaReportURL ? "Report Uploaded" : "No Report Found"}</p>
                                         </div>
                                     </div>
-                                    <button className="text-[#008080] font-black text-xs uppercase tracking-tighter hover:underline underline-offset-4">View Records</button>
+                                    <div className="flex gap-4 items-center">
+                                        {profile.hlaReportURL && (
+                                            <a href={profile.hlaReportURL} target="_blank" rel="noopener noreferrer" className="text-[#008080] font-black text-xs uppercase tracking-tighter hover:underline underline-offset-4">View Records</a>
+                                        )}
+                                        {isEditing && (
+                                            <div className="relative">
+                                                <input type="file" accept=".pdf" onChange={(e) => handleReportUpload(e, 'hla')} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                                <button className="bg-[#008080] text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-[#006967] transition-all">Upload New</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="p-5 bg-gradient-to-r from-orange-500/10 to-transparent rounded-[1.5rem] border border-orange-500/10 flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-orange-600 shadow-sm">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-gray-900 font-bold">Medical Documentation</h4>
+                                            <p className="text-gray-500 text-xs">{profile.medicalReportURL ? "Report Uploaded" : "No Report Found"}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-4 items-center">
+                                        {profile.medicalReportURL && (
+                                            <a href={profile.medicalReportURL} target="_blank" rel="noopener noreferrer" className="text-orange-600 font-black text-xs uppercase tracking-tighter hover:underline underline-offset-4">View Records</a>
+                                        )}
+                                        {isEditing && (
+                                            <div className="relative">
+                                                <input type="file" accept=".pdf" onChange={(e) => handleReportUpload(e, 'medical')} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                                <button className="bg-orange-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-orange-700 transition-all">Upload New</button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
