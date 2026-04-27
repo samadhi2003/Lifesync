@@ -2,8 +2,46 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import { collection, getCountFromServer, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function Hero() {
+    const [stats, setStats] = useState<{ patients: number | null; donors: number | null; doctors: number | null }>({
+        patients: null,
+        donors: null,
+        doctors: null,
+    });
+
+    useEffect(() => {
+        let cancelled = false;
+        const load = async () => {
+            try {
+                const usersRef = collection(db, "users");
+                const [patientSnap, donorSnap, doctorSnap] = await Promise.all([
+                    getCountFromServer(query(usersRef, where("role", "==", "patient"))),
+                    getCountFromServer(query(usersRef, where("role", "==", "donor"))),
+                    getCountFromServer(query(usersRef, where("role", "==", "doctor"))),
+                ]);
+                if (!cancelled) {
+                    setStats({
+                        patients: patientSnap.data().count,
+                        donors: donorSnap.data().count,
+                        doctors: doctorSnap.data().count,
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to load landing stats", err);
+            }
+        };
+        load();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const format = (n: number | null) => (n === null ? "—" : n.toString());
+
     return (
         <>
             <section className="relative pt-20 pb-24 lg:pt-24 lg:pb-32 overflow-hidden">
@@ -111,8 +149,8 @@ export default function Hero() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                     </svg>
                                 </div>
-                                <div className="text-2xl font-bold text-teal-700">500+</div>
-                                <div className="text-[10px] uppercase tracking-wider font-bold text-slate-500 mt-1">Matches</div>
+                                <div className="text-2xl font-bold text-teal-700">{format(stats.patients)}</div>
+                                <div className="text-[10px] uppercase tracking-wider font-bold text-slate-500 mt-1">Patients</div>
                             </div>
                             <div className="glass p-4 rounded-3xl text-center hover-lift flex flex-col items-center">
                                 <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center mb-2">
@@ -120,8 +158,8 @@ export default function Hero() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
-                                <div className="text-2xl font-bold text-teal-700">98%</div>
-                                <div className="text-[10px] uppercase tracking-wider font-bold text-slate-500 mt-1">Success</div>
+                                <div className="text-2xl font-bold text-teal-700">{format(stats.donors)}</div>
+                                <div className="text-[10px] uppercase tracking-wider font-bold text-slate-500 mt-1">Donors</div>
                             </div>
                             <div className="glass p-4 rounded-3xl text-center hover-lift flex flex-col items-center">
                                 <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center mb-2">
@@ -129,8 +167,8 @@ export default function Hero() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
                                     </svg>
                                 </div>
-                                <div className="text-2xl font-bold text-teal-700">24/7</div>
-                                <div className="text-[10px] uppercase tracking-wider font-bold text-slate-500 mt-1">Support</div>
+                                <div className="text-2xl font-bold text-teal-700">{format(stats.doctors)}</div>
+                                <div className="text-[10px] uppercase tracking-wider font-bold text-slate-500 mt-1">Doctors</div>
                             </div>
                         </div>
                     </div>

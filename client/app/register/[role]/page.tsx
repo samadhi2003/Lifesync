@@ -8,11 +8,15 @@ import { doc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { auth, db, storage } from "@/lib/firebase";
 
+const ALLOWED_ROLES = ["patient", "donor", "doctor"] as const;
+
 export default function RegisterStep1() {
     const params = useParams();
+    const router = useRouter();
     const roleRaw = (params.role as string)?.toLowerCase();
     const role = roleRaw ? roleRaw.charAt(0).toUpperCase() + roleRaw.slice(1) : "User";
     const isDoctor = roleRaw === 'doctor';
+    const isAllowedRole = (ALLOWED_ROLES as readonly string[]).includes(roleRaw);
 
     const [step, setStep] = useState(1);
 
@@ -35,7 +39,6 @@ export default function RegisterStep1() {
         setStep(step - 1);
     };
 
-    const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -243,6 +246,27 @@ export default function RegisterStep1() {
             setLoading(false);
         }
     };
+
+    if (roleRaw && !isAllowedRole) {
+        return (
+            <div className="min-h-screen bg-[#E6F7F8] flex items-center justify-center p-6 font-sans">
+                <div className="max-w-md w-full bg-white rounded-3xl border border-white/50 shadow-xl p-10 text-center">
+                    <h1 className="text-2xl font-black text-gray-900 mb-3">Registration not available</h1>
+                    <p className="text-gray-500 mb-8 text-sm">
+                        Accounts for the <span className="font-bold text-[#008080]">{role}</span> role can't be self-registered. Admin accounts are created by existing administrators from the Users page.
+                    </p>
+                    <div className="flex gap-3">
+                        <button onClick={() => router.push("/register")} className="flex-1 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl transition-all hover:bg-slate-200">
+                            Choose a role
+                        </button>
+                        <button onClick={() => router.push("/login/sign-in")} className="flex-1 py-3 bg-[#008080] hover:bg-[#006967] text-white font-bold rounded-xl transition-all">
+                            Sign in
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#E6F7F8] flex flex-col items-center py-12 px-4 font-sans">

@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { auth, db, storage } from "@/lib/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
-import Image from "next/image";
 
 export default function DoctorProfile() {
     const [isEditing, setIsEditing] = useState(false);
@@ -14,15 +13,19 @@ export default function DoctorProfile() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [currentUid, setCurrentUid] = useState<string | null>(null);
     const [profile, setProfile] = useState({
-        name: "Dr. Richardson",
-        email: "richardson@lifesync.org",
-        phone: "+1 (555) 012-3456",
-        specialization: "Hematology & Oncology",
-        licenseNumber: "MED-99283-X",
-        hospital: "LifeSync Central Hospital",
+        name: "",
+        email: "",
+        phone: "",
+        specialization: "",
+        licenseNumber: "",
+        hospital: "",
         photoURL: "",
         notifications: true,
         twoFactor: true
+    });
+    const [stats, setStats] = useState<{ livesImpacted: number | null; matchAccuracy: number | null }>({
+        livesImpacted: null,
+        matchAccuracy: null,
     });
 
     useEffect(() => {
@@ -35,15 +38,24 @@ export default function DoctorProfile() {
                         const data = userDoc.data();
                         setProfile(prev => ({
                             ...prev,
-                            name: data.fullName || prev.name,
-                            email: data.email || user.email || prev.email,
-                            phone: data.contact || prev.phone,
-                            specialization: data.specialization || prev.specialization,
-                            licenseNumber: data.licenseNumber || prev.licenseNumber,
-                            hospital: data.hospital || prev.hospital,
-                            photoURL: data.photoURL || prev.photoURL,
+                            name: data.fullName || "",
+                            email: data.email || user.email || "",
+                            phone: data.contact || "",
+                            specialization: data.specialization || "",
+                            licenseNumber: data.licenseNumber || "",
+                            hospital: data.hospital || "",
+                            photoURL: data.photoURL || "",
                         }));
                     }
+
+                    const patientsSnap = await getDocs(
+                        query(collection(db, "patients"), where("doctorId", "==", user.uid)),
+                    );
+                    const patientDocs = patientsSnap.docs.map((d) => d.data() as any);
+                    const livesImpacted = patientDocs.length;
+                    const matchedCount = patientDocs.filter((p) => (p.status || "").toLowerCase() === "matched").length;
+                    const matchAccuracy = livesImpacted > 0 ? Math.round((matchedCount / livesImpacted) * 100) : null;
+                    setStats({ livesImpacted, matchAccuracy });
                 } catch (err) {
                     console.error("Error fetching profile:", err);
                 }
@@ -124,7 +136,7 @@ export default function DoctorProfile() {
                                 <img src={profile.photoURL} alt="Profile" className="w-full h-full object-cover rounded-[1.85rem]" />
                             ) : (
                                 <div className="w-full h-full rounded-[1.85rem] bg-teal-50 flex items-center justify-center text-[#008080] text-3xl font-black">
-                                    {profile.name.substring(0, 2).toUpperCase()}
+                                    {(profile.name || "?").substring(0, 2).toUpperCase()}
                                 </div>
                             )}
                             {isEditing && (
@@ -148,8 +160,8 @@ export default function DoctorProfile() {
                     </div>
 
                     <div className="mb-4">
-                        <h1 className="text-3xl font-black text-gray-900 tracking-tight">{profile.name}</h1>
-                        <p className="text-teal-600 font-bold uppercase tracking-[0.2em] text-[10px] mt-1">{profile.specialization}</p>
+                        <h1 className="text-3xl font-black text-gray-900 tracking-tight">{profile.name || "Doctor"}</h1>
+                        <p className="text-teal-600 font-bold uppercase tracking-[0.2em] text-[10px] mt-1">{profile.specialization || "Specialization pending"}</p>
                     </div>
                 </div>
 
@@ -213,7 +225,7 @@ export default function DoctorProfile() {
                                     <input
                                         type={field.type}
                                         disabled={!isEditing}
-                                        value={profile[field.key as keyof typeof profile]}
+                                        value={String(profile[field.key as keyof typeof profile] ?? "")}
                                         onChange={(e) => setProfile(prev => ({ ...prev, [field.key]: e.target.value }))}
                                         className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-3.5 text-gray-900 font-bold text-sm focus:ring-2 focus:ring-[#008080]/10 transition-all disabled:opacity-60"
                                     />
@@ -230,11 +242,11 @@ export default function DoctorProfile() {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                 </svg>
                             </div>
-                            <h4 className="text-3xl font-black mb-1 font-sans">148</h4>
+                            <h4 className="text-3xl font-black mb-1 font-sans">{stats.livesImpacted ?? "—"}</h4>
                             <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Lives Impacted</p>
                         </div>
                         <div className="bg-white rounded-[2rem] p-8 border border-gray-50 shadow-sm relative overflow-hidden group">
-                            <h4 className="text-3xl font-black text-gray-900 mb-1 font-sans">98%</h4>
+                            <h4 className="text-3xl font-black text-gray-900 mb-1 font-sans">{stats.matchAccuracy === null ? "—" : `${stats.matchAccuracy}%`}</h4>
                             <p className="text-[#94A3B8] text-[10px] font-black uppercase tracking-widest">Match Accuracy</p>
                         </div>
                         <div className="bg-white rounded-[2rem] p-8 border border-gray-50 shadow-sm relative overflow-hidden group text-center">

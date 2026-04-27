@@ -5,6 +5,13 @@ import { auth, db, storage } from "@/lib/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
+import {
+    requestVerification,
+    resolveStatus,
+    statusLabel,
+    statusTone,
+    VerificationStatus,
+} from "@/lib/verification";
 
 export default function PatientProfile() {
     const [isEditing, setIsEditing] = useState(false);
@@ -24,8 +31,13 @@ export default function PatientProfile() {
         hlaReportURL: "",
         medicalReportURL: "",
         notifications: true,
-        twoFactor: false
+        twoFactor: false,
+        verified: false as boolean | undefined,
+        verificationStatus: undefined as VerificationStatus | undefined,
+        verificationRequestedAt: "",
+        verificationNotes: "",
     });
+    const [requestingVerification, setRequestingVerification] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -47,6 +59,10 @@ export default function PatientProfile() {
                         urgency: data.urgency || "Moderate",
                         hlaReportURL: data.hlaReportURL || "",
                         medicalReportURL: data.medicalReportURL || "",
+                        verified: data.verified,
+                        verificationStatus: data.verificationStatus,
+                        verificationRequestedAt: data.verificationRequestedAt || "",
+                        verificationNotes: data.verificationNotes || "",
                     }));
                 }
                 setLoading(false);
@@ -72,6 +88,24 @@ export default function PatientProfile() {
         } catch (error) {
             console.error("Error updating profile:", error);
             alert("Failed to update profile.");
+        }
+    };
+
+    const handleRequestVerification = async () => {
+        if (!currentUid) return;
+        setRequestingVerification(true);
+        try {
+            await requestVerification(currentUid);
+            setProfile((prev) => ({
+                ...prev,
+                verificationStatus: "pending",
+                verificationRequestedAt: new Date().toISOString(),
+            }));
+        } catch (error) {
+            console.error("Error requesting verification:", error);
+            alert("Failed to submit verification request.");
+        } finally {
+            setRequestingVerification(false);
         }
     };
 
@@ -184,9 +218,19 @@ export default function PatientProfile() {
                     </div>
                     <div>
                         <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2">{profile.name}</h1>
-                        <div className="flex flex-wrap gap-3">
+                        <div className="flex flex-wrap gap-3 items-center">
                             <span className="px-4 py-1.5 bg-teal-50 text-[#008080] text-xs font-bold rounded-full border border-teal-100 uppercase tracking-widest shadow-sm">Patient</span>
                             <span className="px-4 py-1.5 bg-orange-50 text-orange-600 text-xs font-bold rounded-full border border-orange-100 uppercase tracking-widest shadow-sm">Urgency: {profile.urgency}</span>
+                            {(() => {
+                                const status = resolveStatus(profile);
+                                const tone = statusTone(status);
+                                return (
+                                    <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-bold uppercase tracking-widest shadow-sm ${tone.badge}`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${tone.dot}`}></span>
+                                        {statusLabel(status)}
+                                    </span>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
@@ -331,6 +375,54 @@ export default function PatientProfile() {
 
                 {/* Right Column: Settings & Security */}
                 <div className="space-y-8">
+                    {(() => {
+                        const status = resolveStatus(profile);
+                        const tone = statusTone(status);
+                        const canRequest = status === "unverified" || status === "rejected";
+                        return (
+                            <div className="bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 p-8 shadow-2xl shadow-slate-900/[0.03]">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-[#008080]">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                        </svg>
+                                    </div>
+                                    <h2 className="text-xl font-bold text-gray-900">Verification</h2>
+                                </div>
+                                <p className="text-gray-500 text-xs leading-relaxed mb-4">
+                                    A LifeSync doctor must review your profile and HLA documentation before you can appear in donor matches. Only verified patients are shown verified donors.
+                                </p>
+                                <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider mb-4 ${tone.badge}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${tone.dot}`}></span>
+                                    {statusLabel(status)}
+                                </div>
+                                {profile.verificationRequestedAt && status === "pending" && (
+                                    <p className="text-[10px] text-gray-400 font-medium mb-4">Requested on {new Date(profile.verificationRequestedAt).toLocaleDateString()}.</p>
+                                )}
+                                {profile.verificationNotes && status === "rejected" && (
+                                    <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-xs text-red-700 mb-4">
+                                        <p className="font-bold mb-1">Doctor's note</p>
+                                        {profile.verificationNotes}
+                                    </div>
+                                )}
+                                <button
+                                    disabled={!canRequest || requestingVerification}
+                                    onClick={handleRequestVerification}
+                                    className="w-full py-3 bg-[#008080] hover:bg-[#006967] text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    {requestingVerification
+                                        ? "Submitting…"
+                                        : status === "pending"
+                                        ? "Awaiting doctor review"
+                                        : status === "verified"
+                                        ? "Verified"
+                                        : status === "rejected"
+                                        ? "Request re-review"
+                                        : "Request verification"}
+                                </button>
+                            </div>
+                        );
+                    })()}
                     <div className="bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 p-8 shadow-2xl shadow-slate-900/[0.03]">
                         <h2 className="text-xl font-bold text-gray-900 mb-6">Settings</h2>
 

@@ -1,9 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { db, auth } from "@/lib/firebase";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
+import { computeMatchPercentage } from "@/lib/matching";
+import { isVerified } from "@/lib/verification";
+import VerifiedBadge from "@/app/components/VerifiedBadge";
+
+type SuggestedDonor = {
+    id: string;
+    name: string;
+    bloodGroup: string;
+    matchPercentage: number;
+    status: "Available" | "Pending";
+};
 
 export default function Patients() {
     const [searchTerm, setSearchTerm] = useState("");
@@ -12,6 +23,8 @@ export default function Patients() {
     const [loading, setLoading] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState<any>(null);
     const [currentUser, setCurrentUser] = useState<any>(null);
+    const [suggestedDonors, setSuggestedDonors] = useState<SuggestedDonor[]>([]);
+    const [suggestedLoading, setSuggestedLoading] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -19,6 +32,47 @@ export default function Patients() {
         });
         return () => unsubscribe();
     }, []);
+
+    useEffect(() => {
+        if (!selectedPatient) {
+            setSuggestedDonors([]);
+            return;
+        }
+
+        let cancelled = false;
+        (async () => {
+            setSuggestedLoading(true);
+            try {
+                const donorsSnap = await getDocs(
+                    query(collection(db, "users"), where("role", "==", "donor")),
+                );
+                const donors = donorsSnap.docs
+                    .map((d) => ({ id: d.id, ...(d.data() as any) }))
+                    // Only verified donors should be suggested for patient matching.
+                    .filter((d: any) => isVerified(d))
+                    .map((d: any): SuggestedDonor => ({
+                        id: d.id,
+                        name: d.fullName || "Unnamed Donor",
+                        bloodGroup: d.bloodGroup || "—",
+                        matchPercentage: computeMatchPercentage(selectedPatient, d),
+                        // Donors with an HLA report on file are considered "Available" for review;
+                        // the rest are shown as Pending documentation.
+                        status: d.hlaReportURL ? "Available" : "Pending",
+                    }))
+                    .sort((a, b) => b.matchPercentage - a.matchPercentage)
+                    .slice(0, 3);
+                if (!cancelled) setSuggestedDonors(donors);
+            } catch (err) {
+                console.error("Failed to load suggested donors:", err);
+            } finally {
+                if (!cancelled) setSuggestedLoading(false);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedPatient]);
 
     // Initial fetch of all patients
     useEffect(() => {
@@ -224,18 +278,30 @@ export default function Patients() {
                                     <h3 className="text-lg font-bold text-gray-900 mb-4">Patient History</h3>
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center py-3 border-b border-gray-50 font-medium">
-                                            <span className="text-gray-500">Last Dialysis:</span>
-                                            <span className="text-gray-900">October 12, 2023</span>
+                                            <span className="text-gray-500">Added to roster:</span>
+                                            <span className="text-gray-900">
+                                                {selectedPatient.createdAt
+                                                    ? new Date(selectedPatient.createdAt).toLocaleDateString()
+                                                    : "—"}
+                                            </span>
                                         </div>
                                         <div className="flex justify-between items-center py-3 border-b border-gray-50 font-medium">
-                                            <span className="text-gray-500">Waitlist Time:</span>
-                                            <span className="text-gray-900">8 Months</span>
+                                            <span className="text-gray-500">Status:</span>
+                                            <span className="text-gray-900">{selectedPatient.status || "Searching"}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center py-3 border-b border-gray-50 font-medium">
+                                            <span className="text-gray-500">On Dialysis:</span>
+                                            <span className="text-gray-900">{selectedPatient.onDialysis ? "Yes" : "No"}</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 p-8 shadow-xl flex-1">
                                     <h3 className="text-lg font-bold text-gray-900 mb-4">Medical Contacts</h3>
-                                    <p className="text-gray-500 text-sm font-medium">Primary Physician: Dr. Silva</p>
+                                    <p className="text-gray-500 text-sm font-medium">
+                                        {currentUser?.email
+                                            ? `Primary Physician: ${currentUser.displayName || currentUser.email}`
+                                            : "Primary Physician: —"}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -243,37 +309,45 @@ export default function Patients() {
                         {/* Suggested Donors */}
                         <div className="bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 p-10 shadow-xl">
                             <h3 className="text-2xl font-black text-gray-900 mb-8">Suggested Donors</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {[1, 2, 3].map((item) => (
-                                    <div key={item} className="bg-white/50 border border-gray-100 p-6 rounded-3xl group hover:shadow-lg transition-all">
-                                        <div className="flex justify-between items-start mb-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center text-[#008080]">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                                    </svg>
+                            {suggestedLoading ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-[#008080]"></div>
+                                </div>
+                            ) : suggestedDonors.length === 0 ? (
+                                <p className="text-slate-400 font-medium text-sm">No donors registered yet. Check back once donors join LifeSync.</p>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    {suggestedDonors.map((donor) => (
+                                        <div key={donor.id} className="bg-white/50 border border-gray-100 p-6 rounded-3xl group hover:shadow-lg transition-all">
+                                            <div className="flex justify-between items-start mb-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center text-[#008080]">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-extrabold text-gray-900">{donor.name}</h4>
+                                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Blood Group: {donor.bloodGroup}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h4 className="font-extrabold text-gray-900">Samadhi</h4>
-                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Blood Group: O+</p>
+                                                <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${donor.status === 'Pending' ? 'bg-orange-100 text-orange-600' : 'bg-teal-100 text-teal-600'}`}>
+                                                    {donor.status}
+                                                </span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-end">
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Match</span>
+                                                    <span className="text-lg font-black text-teal-500">{donor.matchPercentage}%</span>
+                                                </div>
+                                                <div className="w-full bg-gray-100 rounded-full h-1.5 shadow-inner overflow-hidden">
+                                                    <div className="h-full bg-teal-400 transition-all" style={{ width: `${donor.matchPercentage}%` }}></div>
                                                 </div>
                                             </div>
-                                            <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${item % 2 === 0 ? 'bg-orange-100 text-orange-600' : 'bg-teal-100 text-teal-600'}`}>
-                                                {item % 2 === 0 ? 'Pending' : 'Available'}
-                                            </span>
                                         </div>
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between items-end">
-                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Match</span>
-                                                <span className="text-lg font-black text-teal-500">92%</span>
-                                            </div>
-                                            <div className="w-full bg-gray-100 rounded-full h-1.5 shadow-inner overflow-hidden">
-                                                <div className="h-full bg-teal-400 w-[92%]"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

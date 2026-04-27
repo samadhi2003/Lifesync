@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
+import { isVerified } from "@/lib/verification";
+import VerificationGate from "@/app/components/VerificationGate";
+import VerifiedBadge from "@/app/components/VerifiedBadge";
 
 interface PatientRequest {
     id: number;
@@ -30,11 +33,12 @@ export default function DonorHome() {
                     setCurrentUser({ uid: user.uid, ...userDoc.data() });
                 }
 
-                // Fetch all Patients
+                // Fetch verified Patients only. Unverified patients must
+                // be reviewed by a doctor before donors see them.
                 const patientsSnapshot = await getDocs(collection(db, "users"));
                 const patientsList = patientsSnapshot.docs
                     .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .filter((u: any) => u.role === "patient");
+                    .filter((u: any) => u.role === "patient" && isVerified(u));
 
                 // Map Firestore data to the PatientRequest interface
                 const patientsWithMatch = patientsList.map((p: any) => {
@@ -126,10 +130,14 @@ export default function DonorHome() {
                 </div>
             </div>
 
+            <VerificationGate user={currentUser} profileHref="/dashboard/donor/profile" audience="donor" />
+
+            {isVerified(currentUser) && (
+            <>
             {/* Filter Section Header */}
             <div className="mb-8 relative z-10">
-                <h2 className="text-[#006967] text-3xl font-black tracking-tight mb-2">All Matches</h2>
-                <p className="text-gray-500 font-medium text-lg">Browse all potential kidney donors</p>
+                <h2 className="text-[#006967] text-3xl font-black tracking-tight mb-2">Patient Requests</h2>
+                <p className="text-gray-500 font-medium text-lg">Only verified patients are shown</p>
             </div>
 
             {/* Filter Bar */}
@@ -155,7 +163,7 @@ export default function DonorHome() {
                     </div>
                 </div>
                 <div className="mt-6 ml-2 font-bold text-gray-400 text-sm">
-                    Showing <span className="text-[#008080]">{filteredRequests.length}</span> of {patientRequests.length} donors
+                    Showing <span className="text-[#008080]">{filteredRequests.length}</span> of {patientRequests.length} verified patients
                 </div>
             </div>
 
@@ -172,7 +180,10 @@ export default function DonorHome() {
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 className="font-extrabold text-gray-900 text-lg leading-tight group-hover:text-[#008080] transition-colors">{request.name}</h3>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <h3 className="font-extrabold text-gray-900 text-lg leading-tight group-hover:text-[#008080] transition-colors">{request.name}</h3>
+                                        <VerifiedBadge user={request as any} />
+                                    </div>
                                     <div className="flex items-center gap-1.5 mt-1">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -236,6 +247,8 @@ export default function DonorHome() {
                     </div>
                 ))}
             </div>
+            </>
+            )}
             <style jsx global>{`
                 @keyframes shimmer {
                     100% { transform: translateX(100%); }

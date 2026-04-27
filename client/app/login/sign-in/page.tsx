@@ -5,7 +5,15 @@ import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
+
+const ROLE_ROUTES: Record<string, string> = {
+    admin: "/admin",
+    doctor: "/dashboard/doctor",
+    donor: "/dashboard/donor",
+    patient: "/dashboard/patient",
+};
 
 export default function SignInPage() {
     const [email, setEmail] = useState("");
@@ -45,10 +53,18 @@ export default function SignInPage() {
 
         setLoading(true);
         try {
-            await signInWithEmailAndPassword(auth, email, password);
-            // Redirect to dashboard or home page on success
-            // TODO: Ideally check user role and redirect to specific dashboard
-            router.push("/dashboard/patient");
+            const cred = await signInWithEmailAndPassword(auth, email, password);
+            let destination = "/dashboard/patient";
+            try {
+                const snap = await getDoc(doc(db, "users", cred.user.uid));
+                const role = snap.exists() ? (snap.data() as any).role : null;
+                if (role && ROLE_ROUTES[role]) {
+                    destination = ROLE_ROUTES[role];
+                }
+            } catch (lookupErr) {
+                console.error("Role lookup failed, falling back to patient dashboard:", lookupErr);
+            }
+            router.push(destination);
         } catch (err: any) {
             console.error("Login error:", err);
             setError("Failed to login. Please check your credentials.");

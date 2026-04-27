@@ -4,6 +4,8 @@ import { useState, useRef } from "react";
 import { db, storage, auth } from "@/lib/firebase";
 import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { isVerified } from "@/lib/verification";
+import VerifiedBadge from "@/app/components/VerifiedBadge";
 
 export default function FindDonors() {
     const [isSearching, setIsSearching] = useState(false);
@@ -81,6 +83,9 @@ export default function FindDonors() {
                 id: doc.id,
                 ...doc.data()
             })) as any[];
+
+            // Only verified donors should be surfaced to doctors during matching.
+            donors = donors.filter((d) => isVerified(d));
 
             // Client-side filtering (Firestore queries are limited for multiple fields without indices)
             if (filters.bloodGroup && filters.bloodGroup !== "Select your blood group") {
@@ -285,7 +290,10 @@ export default function FindDonors() {
                                                 </svg>
                                             </div>
                                             <div>
-                                                <h4 className="font-extrabold text-gray-900">{donor.fullName || "Unknown Donor"}</h4>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <h4 className="font-extrabold text-gray-900">{donor.fullName || "Unknown Donor"}</h4>
+                                                    <VerifiedBadge user={donor as any} />
+                                                </div>
                                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Blood Group: {donor.bloodGroup || "N/A"}</p>
                                                 {donor.address && <p className="text-[10px] text-gray-400 font-medium mt-1">{donor.address}</p>}
                                             </div>

@@ -17,9 +17,9 @@ export default function DoctorLayout({
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState("");
     const [profile, setProfile] = useState<{ name: string; photoURL: string; specialization: string }>({
-        name: "Dr. Richardson",
+        name: "",
         photoURL: "",
-        specialization: "Hematology Dept"
+        specialization: ""
     });
 
     useEffect(() => {
@@ -31,9 +31,9 @@ export default function DoctorLayout({
                     if (userDoc.exists()) {
                         const data = userDoc.data();
                         setProfile({
-                            name: data.fullName || "Dr. Richardson",
+                            name: data.fullName || user.displayName || "",
                             photoURL: data.photoURL || "",
-                            specialization: data.specialization || "Hematology Dept"
+                            specialization: data.specialization || ""
                         });
                     }
                 }, (err) => {
@@ -64,7 +64,7 @@ export default function DoctorLayout({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
         ) },
-        { name: "Approval Queue", href: "#", icon: (
+        { name: "Verifications", href: "/dashboard/doctor/verifications", icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
@@ -139,12 +139,12 @@ export default function DoctorLayout({
                             {profile.photoURL ? (
                                 <img src={profile.photoURL} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
-                                profile.name.substring(0, 2).toUpperCase()
+                                (profile.name || "?").substring(0, 2).toUpperCase()
                             )}
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-sm font-bold text-[#1A1C1E]">{profile.name}</span>
-                            <span className="text-[11px] text-[#94A3B8] font-medium uppercase tracking-wider">{profile.specialization}</span>
+                            <span className="text-sm font-bold text-[#1A1C1E]">{profile.name || "Doctor"}</span>
+                            <span className="text-[11px] text-[#94A3B8] font-medium uppercase tracking-wider">{profile.specialization || "Specialization pending"}</span>
                         </div>
                     </div>
 
@@ -207,7 +207,7 @@ export default function DoctorLayout({
                                  <img src={profile.photoURL} alt="Doctor" className="w-full h-full object-cover" />
                              ) : (
                                  <div className="w-full h-full flex items-center justify-center text-[#008080] text-[10px] font-bold">
-                                     {profile.name.substring(0, 2).toUpperCase()}
+                                     {(profile.name || "?").substring(0, 2).toUpperCase()}
                                  </div>
                              )}
                         </div>

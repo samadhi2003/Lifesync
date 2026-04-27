@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { auth, db } from "@/lib/firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
+import { computeMatchPercentage, matchLabel, matchLevel } from "@/lib/matching";
+import { isVerified } from "@/lib/verification";
+import VerificationGate from "@/app/components/VerificationGate";
+import VerifiedBadge from "@/app/components/VerifiedBadge";
 
 export default function PatientDashboard() {
     const [filter, setFilter] = useState("All");
@@ -28,11 +32,12 @@ export default function PatientDashboard() {
                     });
                 }
 
-                // Fetch all donors from Firestore
+                // Fetch verified donors from Firestore. Only verified donors
+                // are shown so the matching board can't surface unvetted users.
                 const donorsSnapshot = await getDocs(collection(db, "users"));
                 const donorsList = donorsSnapshot.docs
                     .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .filter((u: any) => u.role === "donor"); // Only get donors
+                    .filter((u: any) => u.role === "donor" && isVerified(u));
 
                 setDonors(donorsList);
                 setLoading(false);
@@ -43,6 +48,17 @@ export default function PatientDashboard() {
 
         return () => unsubscribe();
     }, []);
+
+    const donorsWithMatch = useMemo(
+        () =>
+            donors
+                .map((donor) => ({
+                    ...donor,
+                    match: computeMatchPercentage(currentUser, donor),
+                }))
+                .sort((a, b) => b.match - a.match),
+        [donors, currentUser],
+    );
 
     if (loading) {
         return (
@@ -65,23 +81,9 @@ export default function PatientDashboard() {
         );
     }
 
-    const getProgressColor = (match: number) => {
-        if (match >= 80) return "bg-[#00BFA5]"; // Teal Green
-        if (match >= 50) return "bg-[#FFB300]"; // Amber/Yellow
-        return "bg-[#EF5350]"; // Red
-    };
-
-
-
-    const filteredDonors = donors.filter(donor => {
-        // For now show all donors - you can add match scoring logic later
+    const filteredDonors = donorsWithMatch.filter((donor) => {
         if (filter === "All") return true;
-        // Placeholder for match levels - will need match scoring algorithm
-        const matchScore = Math.floor(Math.random() * 100); // Temporary random
-        if (filter === "High") return matchScore >= 80;
-        if (filter === "Medium") return matchScore >= 50 && matchScore < 80;
-        if (filter === "Low") return matchScore < 50;
-        return true;
+        return matchLevel(donor.match) === filter;
     });
 
     return (
@@ -112,34 +114,41 @@ export default function PatientDashboard() {
                 </div>
             </div>
 
-            {/* Header */}
-            <div className="mb-8 pl-2">
-                <h1 className="text-[#004D40] text-3xl font-bold mb-1">All Matches</h1>
-                <p className="text-slate-500">Browse all potential kidney donors</p>
-            </div>
+            <VerificationGate user={currentUser} profileHref="/dashboard/patient/profile" audience="patient" />
 
-            {/* Filter Bar - Glassmorphism */}
-            <div className="bg-white/50 backdrop-blur-xl border border-white/40 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between mb-8 shadow-lg ring-1 ring-white/20">
-                <div className="font-bold text-[#00695C] text-lg pl-2">Filter by Match Level</div>
-                <div className="flex gap-2">
-                    {["All", "High", "Medium", "Low"].map((f) => (
-                        <button
-                            key={f}
-                            onClick={() => setFilter(f)}
-                            className={`px-6 py-2 rounded-xl font-medium text-sm transition-all duration-300 ${filter === f
-                                ? "bg-[#00796B] text-white shadow-lg scale-105"
-                                : "bg-white/50 text-gray-700 hover:bg-white/80 hover:shadow-md"
-                                }`}
-                        >
-                            {f}
-                        </button>
-                    ))}
-                </div>
-            </div>
+            {isVerified(currentUser) && (
+                <>
+                    {/* Header */}
+                    <div className="mb-8 pl-2">
+                        <h1 className="text-[#004D40] text-3xl font-bold mb-1">All Matches</h1>
+                        <p className="text-slate-500">Browse verified kidney donors</p>
+                    </div>
 
-            <p className="text-slate-500 text-sm mb-6 font-medium pl-2">Showing {filteredDonors.length} of {donors.length} donors</p>
+                    {/* Filter Bar - Glassmorphism */}
+                    <div className="bg-white/50 backdrop-blur-xl border border-white/40 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between mb-8 shadow-lg ring-1 ring-white/20">
+                        <div className="font-bold text-[#00695C] text-lg pl-2">Filter by Match Level</div>
+                        <div className="flex gap-2">
+                            {["All", "High", "Medium", "Low"].map((f) => (
+                                <button
+                                    key={f}
+                                    onClick={() => setFilter(f)}
+                                    className={`px-6 py-2 rounded-xl font-medium text-sm transition-all duration-300 ${filter === f
+                                        ? "bg-[#00796B] text-white shadow-lg scale-105"
+                                        : "bg-white/50 text-gray-700 hover:bg-white/80 hover:shadow-md"
+                                        }`}
+                                >
+                                    {f}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <p className="text-slate-500 text-sm mb-6 font-medium pl-2">Showing {filteredDonors.length} of {donorsWithMatch.length} verified donors</p>
+                </>
+            )}
 
             {/* Grid */}
+            {isVerified(currentUser) && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredDonors.map((donor) => (
                     <div key={donor.id} className="group bg-white/40 backdrop-blur-md rounded-3xl p-6 shadow-lg border border-white/30 hover:shadow-2xl hover:bg-white/60 transition-all duration-300 relative overflow-hidden ring-1 ring-white/20 hover:-translate-y-1">
@@ -155,7 +164,10 @@ export default function PatientDashboard() {
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-gray-900 text-xl tracking-tight">{donor.fullName || "Donor"}</h3>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <h3 className="font-bold text-gray-900 text-xl tracking-tight">{donor.fullName || "Donor"}</h3>
+                                        <VerifiedBadge user={donor} />
+                                    </div>
                                     <div className="flex items-center gap-1.5 mt-0.5">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -175,7 +187,7 @@ export default function PatientDashboard() {
                             </div>
                             <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100/50">
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Match Level</span>
-                                <p className="text-xl font-black text-teal-600">Elite</p>
+                                <p className={`text-xl font-black ${donor.match >= 80 ? 'text-teal-600' : 'text-orange-600'}`}>{matchLabel(donor.match)}</p>
                             </div>
                         </div>
 
@@ -184,14 +196,14 @@ export default function PatientDashboard() {
                             <div className="flex justify-between items-end mb-3">
                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Compatibility</p>
                                 <div className="flex items-baseline gap-0.5">
-                                    <span className="text-2xl font-black text-gray-900">95</span>
+                                    <span className="text-2xl font-black text-gray-900">{donor.match}</span>
                                     <span className="text-xs font-bold text-[#00796B]">%</span>
                                 </div>
                             </div>
                             <div className="w-full bg-gray-100/80 rounded-full h-2.5 p-0.5 shadow-inner">
                                 <div
-                                    className="h-full rounded-full shadow-lg transition-all duration-1000 ease-out relative overflow-hidden bg-gradient-to-r from-[#26A69A] to-[#4DB6AC]"
-                                    style={{ width: "95%" }}
+                                    className={`h-full rounded-full shadow-lg transition-all duration-1000 ease-out relative overflow-hidden ${donor.match >= 80 ? 'bg-gradient-to-r from-[#26A69A] to-[#4DB6AC]' : 'bg-gradient-to-r from-[#FFB74D] to-[#FFA726]'}`}
+                                    style={{ width: `${donor.match}%` }}
                                 >
                                     {/* Shimmer effect on progress bar */}
                                     <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
@@ -208,6 +220,7 @@ export default function PatientDashboard() {
                     </div>
                 ))}
             </div>
+            )}
 
             <style jsx global>{`
                 @keyframes blob {
