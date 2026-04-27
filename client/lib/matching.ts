@@ -1,13 +1,14 @@
 /**
- * Deterministic compatibility calculation used across the UI.
+ * Compatibility scoring used across the UI.
  *
- * We do not yet have the Flask HLA matching service connected, so
- * match percentages are derived from a stable hash of the donor/patient
- * pair so that the same two users always see the same number.
- *
- * When the real ML endpoint is wired in, replace this with a call that
- * consumes HLA data and returns a genuine compatibility score.
+ * When both sides have HLA typing on file we score the actual histocompatibility
+ * with CREG-aware locus comparison (see lib/hla.ts). When one or both sides
+ * haven't been HLA-typed yet, we fall back to a deterministic seeded score so
+ * the UI stays stable; the caller can read `provisional` to render that as
+ * "HLA pending" in the UI.
  */
+
+import { hasHla, HlaScoreResult, HlaTyping, scoreHla } from "./hla";
 
 const ABO_COMPATIBILITY: Record<string, string[]> = {
     "O-": ["O-"],
@@ -33,43 +34,82 @@ function hash(input: string): number {
     return h;
 }
 
-/**
- * Returns a stable score in [min, max] for the given seed.
- */
 function seededScore(seed: string, min: number, max: number): number {
     if (!seed) return min;
     const span = max - min + 1;
     return (hash(seed) % span) + min;
 }
 
-/**
- * Compatibility score 0-100 between a patient and a donor.
- * Incompatible blood groups cap the score low; otherwise we return a
- * deterministic value so the UI stays stable across renders.
- */
-export function computeMatchPercentage(
-    patient: { uid?: string; id?: string; bloodGroup?: string } | null | undefined,
-    donor: { uid?: string; id?: string; bloodGroup?: string } | null | undefined,
-): number {
-    const patientId = patient?.uid || patient?.id || "";
-    const donorId = donor?.uid || donor?.id || "";
-    const seed = `${patientId}:${donorId}`;
+type Subject = {
+    uid?: string;
+    id?: string;
+    bloodGroup?: string;
+    hla?: HlaTyping | null;
+} | null | undefined;
 
-    if (patient?.bloodGroup && donor?.bloodGroup) {
-        if (!isBloodCompatible(patient.bloodGroup, donor.bloodGroup)) {
-            return seededScore(seed || donorId || patientId, 20, 45);
-        }
+export type MatchDetail = {
+    score: number;
+    provisional: boolean;
+    abo: { compatible: boolean; missing: boolean };
+    hla: HlaScoreResult;
+};
+
+/**
+ * Full match detail. Use this when you want the per-locus breakdown.
+ */
+export function computeMatch(patient: Subject, donor: Subject): MatchDetail {
+    const patientBlood = patient?.bloodGroup;
+    const donorBlood = donor?.bloodGroup;
+    const aboMissing = !patientBlood || !donorBlood;
+    const aboCompatible = !aboMissing && isBloodCompatible(patientBlood, donorBlood);
+
+    const hla = scoreHla(patient?.hla, donor?.hla);
+
+    if (!aboMissing && !aboCompatible) {
+        // ABO incompatible — hard fail. Cap below the "compatible" floor so
+        // these always sort to the bottom of any list.
+        return {
+            score: Math.min(hla.bothSidesHaveData ? hla.score : 30, 30),
+            provisional: !hla.bothSidesHaveData,
+            abo: { compatible: false, missing: false },
+            hla,
+        };
     }
 
-    return seededScore(seed || donorId || patientId, 60, 99);
+    if (hla.bothSidesHaveData) {
+        return {
+            score: hla.score,
+            provisional: false,
+            abo: { compatible: aboCompatible, missing: aboMissing },
+            hla,
+        };
+    }
+
+    // Fallback: deterministic seeded score in [60, 99] so the UI is usable
+    // before users get HLA-typed by their referring doctors.
+    const patientId = patient?.uid || patient?.id || "";
+    const donorId = donor?.uid || donor?.id || "";
+    const seed = `${patientId}:${donorId}` || donorId || patientId;
+    return {
+        score: seededScore(seed, 60, 99),
+        provisional: true,
+        abo: { compatible: aboCompatible, missing: aboMissing },
+        hla,
+    };
 }
 
 /**
- * Score for a single user when no counterpart is available (e.g. donor
- * browsing their own match list before accepting). Produces a stable
- * number in the 60-99 range.
+ * Backwards-compatible numeric percentage used by existing match cards.
  */
-export function selfMatchPercentage(user: { uid?: string; id?: string } | null | undefined): number {
+export function computeMatchPercentage(patient: Subject, donor: Subject): number {
+    return computeMatch(patient, donor).score;
+}
+
+export function hasHlaTyping(user: Subject): boolean {
+    return hasHla(user?.hla);
+}
+
+export function selfMatchPercentage(user: Subject): number {
     const seed = user?.uid || user?.id || "";
     return seededScore(seed, 60, 99);
 }

@@ -12,6 +12,8 @@ import {
     statusTone,
     VerificationStatus,
 } from "@/lib/verification";
+import HlaEditor from "@/app/components/HlaEditor";
+import { HlaTyping } from "@/lib/hla";
 
 export default function PatientProfile() {
     const [isEditing, setIsEditing] = useState(false);
@@ -36,6 +38,7 @@ export default function PatientProfile() {
         verificationStatus: undefined as VerificationStatus | undefined,
         verificationRequestedAt: "",
         verificationNotes: "",
+        hla: undefined as HlaTyping | undefined,
     });
     const [requestingVerification, setRequestingVerification] = useState(false);
 
@@ -63,6 +66,7 @@ export default function PatientProfile() {
                         verificationStatus: data.verificationStatus,
                         verificationRequestedAt: data.verificationRequestedAt || "",
                         verificationNotes: data.verificationNotes || "",
+                        hla: data.hla,
                     }));
                 }
                 setLoading(false);
@@ -371,6 +375,16 @@ export default function PatientProfile() {
                             </div>
                         </div>
                     </div>
+
+                    {currentUid && (
+                        <HlaEditor
+                            uid={currentUid}
+                            initial={profile.hla}
+                            actorRole="patient"
+                            actorUid={currentUid}
+                            onSaved={(next) => setProfile((prev) => ({ ...prev, hla: next }))}
+                        />
+                    )}
                 </div>
 
                 {/* Right Column: Settings & Security */}

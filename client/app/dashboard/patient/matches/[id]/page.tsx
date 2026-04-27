@@ -5,7 +5,9 @@ import { use, useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { computeMatchPercentage, isBloodCompatible, matchLabel } from "@/lib/matching";
+import { computeMatch, isBloodCompatible, matchLabel } from "@/lib/matching";
+import { HlaScoreResult, HlaTyping } from "@/lib/hla";
+import HlaCompareTable from "@/app/components/HlaCompareTable";
 
 type DonorProfile = {
     id: string;
@@ -14,6 +16,10 @@ type DonorProfile = {
     bloodGroup: string;
     location: string;
     match: number;
+    provisional: boolean;
+    hlaResult: HlaScoreResult;
+    patientHla: HlaTyping | null;
+    donorHla: HlaTyping | null;
     status: "ACCEPTED" | "REQUESTED";
     bio: string;
     medicalInfo: {
@@ -52,7 +58,7 @@ export default function DonorProfilePage(props: { params: Promise<{ id: string }
                 }
 
                 const data = donorDoc.data() as any;
-                const match = computeMatchPercentage(patient, { id: params.id, ...data });
+                const detail = computeMatch(patient as any, { id: params.id, ...data });
 
                 setDonor({
                     id: params.id,
@@ -60,8 +66,12 @@ export default function DonorProfilePage(props: { params: Promise<{ id: string }
                     age: calculateAge(data.dob),
                     bloodGroup: data.bloodGroup || "—",
                     location: data.address || "Location not provided",
-                    match,
-                    status: match >= 80 ? "ACCEPTED" : "REQUESTED",
+                    match: detail.score,
+                    provisional: detail.provisional,
+                    hlaResult: detail.hla,
+                    patientHla: (patient as any)?.hla || null,
+                    donorHla: data.hla || null,
+                    status: detail.score >= 80 ? "ACCEPTED" : "REQUESTED",
                     bio: data.bio || "This donor has not provided a personal bio yet.",
                     medicalInfo: {
                         bloodTypeCompatible: isBloodCompatible(
@@ -225,6 +235,20 @@ export default function DonorProfilePage(props: { params: Promise<{ id: string }
                                 </div>
                             )}
                         </div>
+                    </div>
+
+                    {/* HLA breakdown */}
+                    <div className="bg-white/60 backdrop-blur-xl border border-white/50 rounded-3xl p-8 shadow-xl">
+                        <HlaCompareTable patient={donor.patientHla} donor={donor.donorHla} result={donor.hlaResult} />
+                        {donor.provisional && (
+                            <p className="mt-4 text-xs text-amber-700 font-semibold">
+                                {donor.hlaResult.bothSidesHaveData
+                                    ? ""
+                                    : donor.hlaResult.hasData
+                                        ? "Awaiting HLA typing on the other side — score is preliminary."
+                                        : "No HLA typing on either profile yet — score is based on ABO compatibility only."}
+                            </p>
+                        )}
                     </div>
 
                     {/* Bio Section */}

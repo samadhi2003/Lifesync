@@ -12,6 +12,8 @@ import {
     statusTone,
     VerificationStatus,
 } from "@/lib/verification";
+import HlaEditor from "@/app/components/HlaEditor";
+import { HlaTyping, hasHla } from "@/lib/hla";
 
 type PendingUser = {
     id: string;
@@ -27,6 +29,7 @@ type PendingUser = {
     dob?: string;
     hlaReportURL?: string;
     medicalReportURL?: string;
+    hla?: HlaTyping;
     verificationStatus?: VerificationStatus;
     verified?: boolean;
     verificationRequestedAt?: string;
@@ -279,6 +282,26 @@ export default function DoctorVerificationsPage() {
                                     <div className="bg-slate-50 rounded-2xl p-4 text-sm text-slate-600">
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Previous notes</p>
                                         {user.verificationNotes}
+                                    </div>
+                                )}
+
+                                {doctorUid && (
+                                    <HlaEditor
+                                        uid={user.id}
+                                        initial={user.hla}
+                                        actorRole="doctor"
+                                        actorUid={doctorUid}
+                                        onSaved={(next) =>
+                                            setUsers((prev) =>
+                                                prev.map((u) => (u.id === user.id ? { ...u, hla: next } : u)),
+                                            )
+                                        }
+                                    />
+                                )}
+
+                                {!hasHla(user.hla) && (
+                                    <div className="bg-amber-50 border border-amber-100 rounded-2xl p-3 text-xs text-amber-700">
+                                        No HLA typing on file. The user can match on ABO compatibility only until HLA is added.
                                     </div>
                                 )}
 

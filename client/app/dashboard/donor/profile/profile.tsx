@@ -12,6 +12,8 @@ import {
     statusTone,
     VerificationStatus,
 } from "@/lib/verification";
+import HlaEditor from "@/app/components/HlaEditor";
+import { HlaTyping } from "@/lib/hla";
 
 export default function DonorProfile() {
     const [isEditing, setIsEditing] = useState(false);
@@ -35,6 +37,7 @@ export default function DonorProfile() {
         verificationStatus: undefined as VerificationStatus | undefined,
         verificationRequestedAt: "",
         verificationNotes: "",
+        hla: undefined as HlaTyping | undefined,
     });
     const [requestingVerification, setRequestingVerification] = useState(false);
 
@@ -59,6 +62,7 @@ export default function DonorProfile() {
                         verificationStatus: data.verificationStatus,
                         verificationRequestedAt: data.verificationRequestedAt || "",
                         verificationNotes: data.verificationNotes || "",
+                        hla: data.hla,
                     }));
                 }
                 setLoading(false);
@@ -366,6 +370,16 @@ export default function DonorProfile() {
                             </div>
                         </div>
                     </div>
+
+                    {currentUid && (
+                        <HlaEditor
+                            uid={currentUid}
+                            initial={profile.hla}
+                            actorRole="donor"
+                            actorUid={currentUid}
+                            onSaved={(next) => setProfile((prev) => ({ ...prev, hla: next }))}
+                        />
+                    )}
                 </div>
 
                 {/* Right Column: Settings & Security */}
