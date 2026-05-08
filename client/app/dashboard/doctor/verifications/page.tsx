@@ -51,6 +51,16 @@ export default function DoctorVerificationsPage() {
     const [working, setWorking] = useState<string | null>(null);
     const [feedback, setFeedback] = useState<{ type: "ok" | "err"; message: string } | null>(null);
     const [notes, setNotes] = useState<Record<string, string>>({});
+    const [reopened, setReopened] = useState<Set<string>>(new Set());
+
+    const toggleReopen = (id: string) => {
+        setReopened((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -286,13 +296,6 @@ export default function DoctorVerificationsPage() {
                                     )}
                                 </div>
 
-                                {user.verificationNotes && status !== "pending" && (
-                                    <div className="bg-slate-50 rounded-2xl p-4 text-sm text-slate-600">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Previous notes</p>
-                                        {user.verificationNotes}
-                                    </div>
-                                )}
-
                                 {doctorUid && (
                                     <HlaEditor
                                         uid={user.id}
@@ -313,31 +316,70 @@ export default function DoctorVerificationsPage() {
                                     </div>
                                 )}
 
-                                <div className="space-y-3">
-                                    <textarea
-                                        rows={2}
-                                        placeholder="Notes for this decision (optional)"
-                                        value={notes[user.id] || ""}
-                                        onChange={(e) => setNotes((prev) => ({ ...prev, [user.id]: e.target.value }))}
-                                        className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm text-[#1A1C1E] focus:ring-2 focus:ring-[#008080]/20 transition-all resize-none"
-                                    />
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <button
-                                            disabled={working === `approve:${user.id}`}
-                                            onClick={() => handleApprove(user.id)}
-                                            className="px-5 py-2.5 bg-[#008080] hover:bg-[#006967] text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all disabled:opacity-60"
-                                        >
-                                            {working === `approve:${user.id}` ? "Approving…" : "Approve & verify"}
-                                        </button>
-                                        <button
-                                            disabled={working === `reject:${user.id}`}
-                                            onClick={() => handleReject(user.id)}
-                                            className="px-5 py-2.5 bg-red-50 text-red-600 text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-red-100 transition-all disabled:opacity-60"
-                                        >
-                                            {working === `reject:${user.id}` ? "Rejecting…" : "Reject"}
-                                        </button>
+                                {(status === "verified" || status === "rejected") && !reopened.has(user.id) ? (
+                                    <div className={`rounded-2xl p-4 border ${status === "verified" ? "bg-teal-50 border-teal-100" : "bg-red-50 border-red-100"}`}>
+                                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                                            <div className="min-w-0">
+                                                <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${status === "verified" ? "text-teal-700" : "text-red-700"}`}>
+                                                    {status === "verified" ? "Approved" : "Rejected"}
+                                                    {user.verifiedAt ? ` on ${new Date(user.verifiedAt).toLocaleDateString()}` : ""}
+                                                </p>
+                                                {user.verificationNotes ? (
+                                                    <p className={`text-sm ${status === "verified" ? "text-teal-800" : "text-red-800"}`}>
+                                                        {user.verificationNotes}
+                                                    </p>
+                                                ) : (
+                                                    <p className="text-xs text-slate-500 italic">No notes recorded.</p>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => toggleReopen(user.id)}
+                                                className="px-4 py-2 bg-white text-slate-600 text-[10px] font-bold uppercase tracking-widest rounded-lg border border-slate-200 hover:bg-slate-50 transition-all shrink-0"
+                                            >
+                                                Change decision
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {reopened.has(user.id) && (
+                                            <p className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                                                Reversing a previous decision. Submitting will overwrite the existing record.
+                                            </p>
+                                        )}
+                                        <textarea
+                                            rows={2}
+                                            placeholder="Notes for this decision (optional)"
+                                            value={notes[user.id] || ""}
+                                            onChange={(e) => setNotes((prev) => ({ ...prev, [user.id]: e.target.value }))}
+                                            className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm text-[#1A1C1E] focus:ring-2 focus:ring-[#008080]/20 transition-all resize-none"
+                                        />
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <button
+                                                disabled={working === `approve:${user.id}`}
+                                                onClick={() => handleApprove(user.id)}
+                                                className="px-5 py-2.5 bg-[#008080] hover:bg-[#006967] text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all disabled:opacity-60"
+                                            >
+                                                {working === `approve:${user.id}` ? "Approving…" : "Approve & verify"}
+                                            </button>
+                                            <button
+                                                disabled={working === `reject:${user.id}`}
+                                                onClick={() => handleReject(user.id)}
+                                                className="px-5 py-2.5 bg-red-50 text-red-600 text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-red-100 transition-all disabled:opacity-60"
+                                            >
+                                                {working === `reject:${user.id}` ? "Rejecting…" : "Reject"}
+                                            </button>
+                                            {reopened.has(user.id) && (
+                                                <button
+                                                    onClick={() => toggleReopen(user.id)}
+                                                    className="px-4 py-2.5 bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-slate-200 transition-all"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         );
                     })}

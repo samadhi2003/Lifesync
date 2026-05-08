@@ -164,7 +164,7 @@ export default function RegisterStep1() {
         if (!urgency) {
             errors.urgency = "Please select an urgency level";
         }
-        if (onDialysis === null) {
+        if (roleRaw === 'patient' && onDialysis === null) {
             errors.onDialysis = "Please indicate dialysis status";
         }
 
@@ -551,34 +551,36 @@ export default function RegisterStep1() {
                                 )}
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="block text-gray-500 text-xs font-semibold ml-1">On Dialysis?</label>
-                                <div className="flex gap-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setOnDialysis(true)}
-                                        className={`flex-1 py-3.5 rounded-lg border transition-all text-sm font-semibold ${onDialysis === true
-                                            ? "bg-[#4AA3FF] text-white border-[#4AA3FF]"
-                                            : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
-                                            }`}
-                                    >
-                                        Yes
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setOnDialysis(false)}
-                                        className={`flex-1 py-3.5 rounded-lg border transition-all text-sm font-semibold ${onDialysis === false
-                                            ? "bg-[#4AA3FF] text-white border-[#4AA3FF]"
-                                            : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
-                                            }`}
-                                    >
-                                        No
-                                    </button>
+                            {roleRaw === 'patient' && (
+                                <div className="space-y-2">
+                                    <label className="block text-gray-500 text-xs font-semibold ml-1">On Dialysis?</label>
+                                    <div className="flex gap-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setOnDialysis(true)}
+                                            className={`flex-1 py-3.5 rounded-lg border transition-all text-sm font-semibold ${onDialysis === true
+                                                ? "bg-[#4AA3FF] text-white border-[#4AA3FF]"
+                                                : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
+                                                }`}
+                                        >
+                                            Yes
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setOnDialysis(false)}
+                                            className={`flex-1 py-3.5 rounded-lg border transition-all text-sm font-semibold ${onDialysis === false
+                                                ? "bg-[#4AA3FF] text-white border-[#4AA3FF]"
+                                                : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
+                                                }`}
+                                        >
+                                            No
+                                        </button>
+                                    </div>
+                                    {fieldErrors.onDialysis && (
+                                        <p className="text-red-500 text-xs ml-1">{fieldErrors.onDialysis}</p>
+                                    )}
                                 </div>
-                                {fieldErrors.onDialysis && (
-                                    <p className="text-red-500 text-xs ml-1">{fieldErrors.onDialysis}</p>
-                                )}
-                            </div>
+                            )}
 
                             <div className="space-y-2">
                                 <label className="block text-gray-500 text-xs font-semibold ml-1">Urgency Level</label>
