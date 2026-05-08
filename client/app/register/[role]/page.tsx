@@ -7,6 +7,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { auth, db, storage } from "@/lib/firebase";
+import { HlaTyping, LOCI, LOCUS_LABEL, Locus, pruneTyping } from "@/lib/hla";
 
 const ALLOWED_ROLES = ["patient", "donor", "doctor"] as const;
 
@@ -65,6 +66,30 @@ export default function RegisterStep1() {
     // File Upload State
     const [hlaReportFile, setHlaReportFile] = useState<File | null>(null);
     const [medicalReportFile, setMedicalReportFile] = useState<File | null>(null);
+
+    // Manual HLA typing entry (one row per locus, two alleles per row)
+    const [hlaTyping, setHlaTyping] = useState<Partial<Record<Locus, [string, string]>>>({});
+
+    const setAllele = (locus: Locus, index: 0 | 1, value: string) => {
+        setHlaTyping((prev) => {
+            const current = prev[locus] || ["", ""];
+            const next: [string, string] = [current[0] || "", current[1] || ""];
+            next[index] = value;
+            return { ...prev, [locus]: next };
+        });
+    };
+
+    const LOCUS_HINTS: Record<Locus, [string, string]> = {
+        A: ["31", "33"],
+        B: ["35", "55"],
+        C: ["01", "04"],
+        DRB1: ["04", "07"],
+        DRB345: ["DRB4*01", "DRB4*01(N)"],
+        DQA1: ["02", "03"],
+        DQB1: ["03", "03"],
+        DPA1: ["01", "01"],
+        DPB1: ["02", "04"],
+    };
 
     // Field-specific errors
     const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
@@ -223,6 +248,16 @@ export default function RegisterStep1() {
                     const medicalRef = ref(storage, `reports/${user.uid}/medical-report.pdf`);
                     await uploadBytes(medicalRef, medicalReportFile);
                     userData.medicalReportURL = await getDownloadURL(medicalRef);
+                }
+
+                const hlaPayload = pruneTyping({
+                    ...(hlaTyping as HlaTyping),
+                    enteredBy: user.uid,
+                    enteredByRole: roleRaw === "donor" ? "donor" : "patient",
+                    enteredAt: new Date().toISOString(),
+                });
+                if (Object.keys(hlaPayload).some((k) => !["enteredBy", "enteredByRole", "enteredAt"].includes(k))) {
+                    userData.hla = hlaPayload;
                 }
 
             }
@@ -567,31 +602,80 @@ export default function RegisterStep1() {
                                 )}
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="block text-gray-500 text-xs font-semibold ml-1">HLA Report Upload</label>
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#008080] transition-colors bg-white relative">
-                                    <input
-                                        type="file"
-                                        accept=".pdf"
-                                        onChange={handleHlaReportChange}
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    />
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                                    </svg>
-                                    {hlaReportFile ? (
-                                        <p className="text-[#008080] text-xs font-semibold">{hlaReportFile.name}</p>
-                                    ) : (
-                                        <>
-                                            <p className="text-gray-400 text-xs">Click to upload or drag and drop</p>
-                                            <p className="text-gray-300 text-[10px] mt-1">PDF only</p>
-                                        </>
-                                    )}
+                            {/* Manual HLA Typing Entry */}
+                            <div className="space-y-3 pt-2">
+                                <div>
+                                    <label className="block text-gray-500 text-xs font-semibold ml-1">HLA Typing <span className="text-gray-300 font-normal">(optional, can be added later)</span></label>
+                                    <p className="text-[10px] text-gray-400 ml-1 mt-1 leading-relaxed">
+                                        Transcribe each locus from your Histocompatibility report. Enter both alleles per row using the broad serological number (e.g. <span className="font-mono">31</span>, <span className="font-mono">35</span>). Null alleles can be written as <span className="font-mono">DRB4*01(N)</span>.
+                                    </p>
                                 </div>
+                                <div className="overflow-x-auto bg-[#F5F5F5] rounded-lg p-3">
+                                    <table className="w-full text-sm border-separate border-spacing-y-1.5">
+                                        <thead>
+                                            <tr className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                                                <th className="text-left px-2 py-1">Locus</th>
+                                                <th className="text-left px-2 py-1">Allele 1</th>
+                                                <th className="text-left px-2 py-1">Allele 2</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {LOCI.map((locus) => {
+                                                const pair = hlaTyping[locus] || ["", ""];
+                                                return (
+                                                    <tr key={locus}>
+                                                        <td className="px-2 align-middle">
+                                                            <span className="font-bold text-gray-700 text-xs">{LOCUS_LABEL[locus]}</span>
+                                                        </td>
+                                                        <td className="px-2">
+                                                            <input
+                                                                value={pair[0] || ""}
+                                                                onChange={(e) => setAllele(locus, 0, e.target.value)}
+                                                                placeholder={LOCUS_HINTS[locus][0]}
+                                                                className="w-full bg-white border border-transparent rounded-md px-3 py-2 text-xs font-mono text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#008080]/30 transition-all"
+                                                            />
+                                                        </td>
+                                                        <td className="px-2">
+                                                            <input
+                                                                value={pair[1] || ""}
+                                                                onChange={(e) => setAllele(locus, 1, e.target.value)}
+                                                                placeholder={LOCUS_HINTS[locus][1]}
+                                                                className="w-full bg-white border border-transparent rounded-md px-3 py-2 text-xs font-mono text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#008080]/30 transition-all"
+                                                            />
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Compact HLA report attach pill — additional info to back up the manual entries */}
+                                <div className="flex items-center gap-2 pl-1">
+                                    <label className="inline-flex items-center gap-2 text-[11px] text-gray-500 font-semibold cursor-pointer hover:text-[#008080] transition-colors group">
+                                        <input
+                                            type="file"
+                                            accept=".pdf"
+                                            onChange={handleHlaReportChange}
+                                            className="hidden"
+                                        />
+                                        <span className="w-7 h-7 rounded-full bg-[#F5F5F5] group-hover:bg-[#008080]/10 flex items-center justify-center text-gray-400 group-hover:text-[#008080] transition-colors">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                            </svg>
+                                        </span>
+                                        {hlaReportFile ? (
+                                            <span className="text-[#008080]">{hlaReportFile.name}</span>
+                                        ) : (
+                                            <span>Attach HLA report PDF <span className="text-gray-300 font-normal">(optional, supporting document)</span></span>
+                                        )}
+                                    </label>
+                                </div>
+
                             </div>
 
                             <div className="space-y-2">
-                                <label className="block text-gray-500 text-xs font-semibold ml-1">Medical Report Upload</label>
+                                <label className="block text-gray-500 text-xs font-semibold ml-1">Other Medical Reports <span className="text-gray-300 font-normal">(optional)</span></label>
                                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#008080] transition-colors bg-white relative">
                                     <input
                                         type="file"

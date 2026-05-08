@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
@@ -194,9 +195,12 @@ export default function DonorMatches() {
                                 <button className="flex-1 bg-[#008080] hover:bg-[#006967] text-white font-black py-4 rounded-[1.25rem] transition-all duration-300 text-sm shadow-xl shadow-teal-900/10 hover:shadow-teal-900/30 active:scale-[0.98] border-b-4 border-teal-900/20">
                                     Connect
                                 </button>
-                                <button className="flex-1 bg-white hover:bg-gray-50 text-gray-400 hover:text-gray-600 font-bold py-4 rounded-[1.25rem] transition-all duration-300 text-xs active:scale-[0.98] border border-gray-100">
+                                <Link
+                                    href={`/dashboard/donor/matches/${patient.id}`}
+                                    className="flex-1 bg-white hover:bg-gray-50 text-gray-400 hover:text-gray-600 font-bold py-4 rounded-[1.25rem] transition-all duration-300 text-xs active:scale-[0.98] border border-gray-100 flex items-center justify-center"
+                                >
                                     View profile
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     ))}
