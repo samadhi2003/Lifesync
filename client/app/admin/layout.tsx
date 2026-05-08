@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import AdminGuard, { AdminProfile } from "./AdminGuard";
+import NotificationBell from "@/app/components/NotificationBell";
 
 const NAV_ITEMS = [
     {
@@ -50,6 +51,15 @@ const NAV_ITEMS = [
         icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+        ),
+    },
+    {
+        name: "Announcements",
+        href: "/admin/announcements",
+        icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
             </svg>
         ),
     },
@@ -151,9 +161,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             <p className="text-[10px] font-black text-[#94A3B8] uppercase tracking-[0.25em]">LifeSync Admin</p>
                             <h2 className="text-xl font-bold text-[#1A1C1E] tracking-tight">Operations Console</h2>
                         </div>
-                        <div className="text-right">
-                            <p className="text-xs text-[#94A3B8] font-medium">Signed in as</p>
-                            <p className="text-sm font-bold text-[#1A1C1E]">{profile?.fullName || ""}</p>
+                        <div className="flex items-center gap-6">
+                            <NotificationBell inboxHref="/admin/notifications" />
+                            <div className="text-right">
+                                <p className="text-xs text-[#94A3B8] font-medium">Signed in as</p>
+                                <p className="text-sm font-bold text-[#1A1C1E]">{profile?.fullName || ""}</p>
+                            </div>
                         </div>
                     </header>
 

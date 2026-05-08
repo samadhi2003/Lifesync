@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { collection, deleteDoc, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
+import { createNotification } from "@/lib/notifications";
 
 type Row = {
     id: string;
@@ -81,6 +82,18 @@ export default function VerificationList({
         try {
             await updateDoc(doc(db, "users", id), { verified: next });
             setRows((prev) => prev.map((r) => (r.id === id ? { ...r, verified: next } : r)));
+            await createNotification({
+                recipientUid: id,
+                recipientRole: role,
+                type: "verification",
+                title: next ? "You're verified" : "Verification revoked",
+                body: next
+                    ? "An administrator approved your account."
+                    : "An administrator revoked your verification status.",
+                link: `/dashboard/${role}/profile`,
+                createdBy: auth.currentUser?.uid,
+                meta: { approved: next, source: "admin" },
+            });
             setFeedback({ type: "ok", message: next ? "Marked as verified." : "Verification revoked." });
         } catch (err) {
             console.error(err);

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import NotificationBell from "@/app/components/NotificationBell";
 
 export default function DashboardLayout({
     children,
@@ -62,8 +63,9 @@ export default function DashboardLayout({
                         )}
                     </div>
 
-                    {/* Logout Button */}
-                    <div>
+                    {/* Right cluster */}
+                    <div className="flex items-center gap-3">
+                        <NotificationBell inboxHref="/dashboard/notifications" />
                         <button onClick={handleLogout} className="bg-[#008080] hover:bg-[#006967] text-white text-sm font-bold py-2.5 px-6 rounded-lg transition-colors shadow-sm">
                             Logout
                         </button>

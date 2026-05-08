@@ -6,6 +6,7 @@ import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { computeMatchPercentage, matchLabel, matchLevel } from "@/lib/matching";
 import { isVerified } from "@/lib/verification";
+import { createRequest, RequestStatus, subscribeRequestsForPatient } from "@/lib/requests";
 import VerificationGate from "@/app/components/VerificationGate";
 import VerifiedBadge from "@/app/components/VerifiedBadge";
 
@@ -14,6 +15,8 @@ export default function PatientDashboard() {
     const [donors, setDonors] = useState<any[]>([]);
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [requestStatus, setRequestStatus] = useState<Record<string, RequestStatus>>({});
+    const [requestingId, setRequestingId] = useState<string | null>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -49,6 +52,16 @@ export default function PatientDashboard() {
         return () => unsubscribe();
     }, []);
 
+    useEffect(() => {
+        if (!currentUser?.uid) return;
+        const unsub = subscribeRequestsForPatient(currentUser.uid, (items) => {
+            const next: Record<string, RequestStatus> = {};
+            for (const r of items) next[r.donorUid] = r.status;
+            setRequestStatus(next);
+        });
+        return () => unsub();
+    }, [currentUser?.uid]);
+
     const donorsWithMatch = useMemo(
         () =>
             donors
@@ -59,6 +72,28 @@ export default function PatientDashboard() {
                 .sort((a, b) => b.match - a.match),
         [donors, currentUser],
     );
+
+    const handleRequest = async (donor: any) => {
+        if (!currentUser?.uid) return;
+        setRequestingId(donor.id);
+        try {
+            await createRequest({
+                patientUid: currentUser.uid,
+                donorUid: donor.id,
+                patientName: currentUser.fullName,
+                donorName: donor.fullName,
+                patientBloodGroup: currentUser.bloodGroup,
+                patientUrgency: currentUser.urgency,
+                patientLocation: currentUser.address,
+                score: donor.match,
+            });
+        } catch (err) {
+            console.error("Failed to send request:", err);
+            alert("Failed to send request. Please try again.");
+        } finally {
+            setRequestingId(null);
+        }
+    };
 
     if (loading) {
         return (
@@ -213,9 +248,39 @@ export default function PatientDashboard() {
 
                         {/* Action Buttons */}
                         <div className="flex gap-3 relative z-10">
-                            <button className="w-full bg-[#00796B] hover:bg-[#00695C] text-white text-sm font-black py-4 rounded-[1.25rem] transition-all duration-300 shadow-xl shadow-teal-900/10 hover:shadow-teal-900/30 active:scale-95 border-b-4 border-teal-900/20">
-                                Request
-                            </button>
+                            {(() => {
+                                const status = requestStatus[donor.id];
+                                if (status === "accepted") {
+                                    return (
+                                        <button disabled className="w-full bg-teal-50 text-teal-700 text-sm font-black py-4 rounded-[1.25rem] border border-teal-100 cursor-default">
+                                            Accepted
+                                        </button>
+                                    );
+                                }
+                                if (status === "pending") {
+                                    return (
+                                        <button disabled className="w-full bg-[#00796B]/10 text-[#00796B]/60 border border-[#00796B]/20 text-sm font-black py-4 rounded-[1.25rem] cursor-default">
+                                            Requested
+                                        </button>
+                                    );
+                                }
+                                if (status === "ignored") {
+                                    return (
+                                        <button disabled className="w-full bg-slate-50 text-slate-500 border border-slate-100 text-sm font-black py-4 rounded-[1.25rem] cursor-default">
+                                            Declined
+                                        </button>
+                                    );
+                                }
+                                return (
+                                    <button
+                                        disabled={requestingId === donor.id}
+                                        onClick={() => handleRequest(donor)}
+                                        className="w-full bg-[#00796B] hover:bg-[#00695C] text-white text-sm font-black py-4 rounded-[1.25rem] transition-all duration-300 shadow-xl shadow-teal-900/10 hover:shadow-teal-900/30 active:scale-95 border-b-4 border-teal-900/20 disabled:opacity-60"
+                                    >
+                                        {requestingId === donor.id ? "Sending…" : "Request"}
+                                    </button>
+                                );
+                            })()}
                         </div>
                     </div>
                 ))}

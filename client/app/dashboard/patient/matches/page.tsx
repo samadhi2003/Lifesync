@@ -7,6 +7,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { computeMatchPercentage, matchLabel } from "@/lib/matching";
 import { isVerified } from "@/lib/verification";
+import { RequestStatus, subscribeRequestsForPatient } from "@/lib/requests";
 import VerificationGate from "@/app/components/VerificationGate";
 import VerifiedBadge from "@/app/components/VerifiedBadge";
 
@@ -17,12 +18,13 @@ type DonorWithMatch = {
     address?: string;
     urgency?: string;
     match: number;
-    status: "ACCEPTED" | "REQUESTED";
+    status: RequestStatus;
 };
 
 export default function MatchesPage() {
     const [filter, setFilter] = useState("All");
-    const [donors, setDonors] = useState<DonorWithMatch[]>([]);
+    const [verifiedDonors, setVerifiedDonors] = useState<any[]>([]);
+    const [requestStatus, setRequestStatus] = useState<Record<string, RequestStatus>>({});
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -41,21 +43,9 @@ export default function MatchesPage() {
                 const donorsSnapshot = await getDocs(collection(db, "users"));
                 const fetched = donorsSnapshot.docs
                     .map((d) => ({ id: d.id, ...(d.data() as any) }))
-                    .filter((u: any) => u.role === "donor" && isVerified(u))
-                    .map((d: any) => {
-                        const match = computeMatchPercentage(me, d);
-                        return {
-                            ...d,
-                            match,
-                            // Until a real "requests" collection is wired up, use match score
-                            // as the proxy: high-confidence matches are treated as accepted and
-                            // opened for profile viewing; weaker matches stay in the requested state.
-                            status: match >= 80 ? "ACCEPTED" : "REQUESTED",
-                        } as DonorWithMatch;
-                    })
-                    .sort((a: DonorWithMatch, b: DonorWithMatch) => b.match - a.match);
+                    .filter((u: any) => u.role === "donor" && isVerified(u));
 
-                setDonors(fetched);
+                setVerifiedDonors(fetched);
             } catch (err) {
                 console.error("Failed to load matches:", err);
             } finally {
@@ -66,11 +56,32 @@ export default function MatchesPage() {
         return () => unsubscribe();
     }, []);
 
+    useEffect(() => {
+        if (!currentUser?.uid) return;
+        const unsub = subscribeRequestsForPatient(currentUser.uid, (items) => {
+            const next: Record<string, RequestStatus> = {};
+            for (const r of items) next[r.donorUid] = r.status;
+            setRequestStatus(next);
+        });
+        return () => unsub();
+    }, [currentUser?.uid]);
+
+    const donors: DonorWithMatch[] = useMemo(() => {
+        return verifiedDonors
+            .filter((d) => requestStatus[d.id] && requestStatus[d.id] !== "ignored")
+            .map((d) => ({
+                ...d,
+                match: computeMatchPercentage(currentUser, d),
+                status: requestStatus[d.id],
+            }))
+            .sort((a, b) => b.match - a.match);
+    }, [verifiedDonors, requestStatus, currentUser]);
+
     const filteredDonors = useMemo(
         () =>
             donors.filter((donor) => {
                 if (filter === "All") return true;
-                return donor.status === filter.toUpperCase();
+                return donor.status === filter.toLowerCase();
             }),
         [donors, filter],
     );
@@ -107,7 +118,7 @@ export default function MatchesPage() {
             <div className="bg-white/30 backdrop-blur-xl border border-white/40 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between mb-8 shadow-lg ring-1 ring-white/20">
                 <div className="font-bold text-[#00695C] text-lg pl-2">Filter by Status</div>
                 <div className="flex gap-2 flex-wrap justify-center">
-                    {["All", "Accepted", "Requested"].map((f) => (
+                    {["All", "Accepted", "Pending"].map((f) => (
                         <button
                             key={f}
                             onClick={() => setFilter(f)}
@@ -122,12 +133,12 @@ export default function MatchesPage() {
                 </div>
             </div>
 
-            <p className="text-slate-500 text-sm mb-6 font-medium pl-2">Showing {filteredDonors.length} of {donors.length} verified donors</p>
+            <p className="text-slate-500 text-sm mb-6 font-medium pl-2">Showing {filteredDonors.length} of {donors.length} requested donors</p>
 
             {filteredDonors.length === 0 ? (
                 <div className="bg-white/50 backdrop-blur-xl border border-white/40 rounded-2xl p-16 text-center shadow-lg">
-                    <h2 className="text-xl font-black text-slate-500 mb-2">No donors yet</h2>
-                    <p className="text-slate-400">As donors register on LifeSync your matches will appear here.</p>
+                    <h2 className="text-xl font-black text-slate-500 mb-2">No requests yet</h2>
+                    <p className="text-slate-400">Send requests from the home page — donors you contact will show up here.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
@@ -196,7 +207,7 @@ export default function MatchesPage() {
 
                             {/* Action Buttons based on status */}
                             <div className="flex gap-3 relative z-10">
-                                {donor.status === 'ACCEPTED' ? (
+                                {donor.status === "accepted" ? (
                                     <Link href={`/dashboard/patient/matches/${donor.id}`} className="flex-1">
                                         <button className="w-full bg-[#00796B] hover:bg-[#00695C] text-white text-sm font-black py-4 rounded-[1.25rem] transition-all duration-300 shadow-xl shadow-teal-900/10 hover:shadow-teal-900/30 active:scale-95 border-b-4 border-teal-900/20">
                                             View Profile
@@ -207,7 +218,7 @@ export default function MatchesPage() {
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
-                                        Requested
+                                        Awaiting response
                                     </button>
                                 )}
                             </div>

@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { collection, doc, getDoc, getDocs } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { computeMatchPercentage, matchLabel } from "@/lib/matching";
+import { matchLabel } from "@/lib/matching";
 import { isVerified } from "@/lib/verification";
+import { ConnectionRequest, subscribeRequestsForDonor } from "@/lib/requests";
 import VerificationGate from "@/app/components/VerificationGate";
-import VerifiedBadge from "@/app/components/VerifiedBadge";
 
 interface AcceptedPatient {
     id: string;
@@ -21,7 +21,7 @@ interface AcceptedPatient {
 export default function DonorMatches() {
     const [loading, setLoading] = useState(true);
     const [currentDonor, setCurrentDonor] = useState<any>(null);
-    const [acceptedPatients, setAcceptedPatients] = useState<AcceptedPatient[]>([]);
+    const [accepted, setAccepted] = useState<ConnectionRequest[]>([]);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -34,27 +34,8 @@ export default function DonorMatches() {
                 const donorDoc = await getDoc(doc(db, "users", user.uid));
                 const donor = donorDoc.exists() ? { uid: user.uid, ...donorDoc.data() } : { uid: user.uid };
                 setCurrentDonor(donor);
-
-                const snapshot = await getDocs(collection(db, "users"));
-                const patients = snapshot.docs
-                    .map((d) => ({ id: d.id, ...(d.data() as any) }))
-                    .filter((u: any) => u.role === "patient" && isVerified(u))
-                    .map((p: any): AcceptedPatient => ({
-                        id: p.id,
-                        name: p.fullName || "Unknown Patient",
-                        bloodGroup: p.bloodGroup || "N/A",
-                        matchPercentage: computeMatchPercentage(p, donor),
-                        urgency: p.urgency || "Moderate",
-                        location: p.address || "Location Not Provided",
-                    }))
-                    // A donor "accepted patients" list should only show strong matches. Until an
-                    // explicit accept workflow is persisted, we treat any match >= 70% as accepted.
-                    .filter((p) => p.matchPercentage >= 70)
-                    .sort((a, b) => b.matchPercentage - a.matchPercentage);
-
-                setAcceptedPatients(patients);
             } catch (err) {
-                console.error("Failed to load accepted patients:", err);
+                console.error("Failed to load donor profile:", err);
             } finally {
                 setLoading(false);
             }
@@ -63,7 +44,26 @@ export default function DonorMatches() {
         return () => unsubscribe();
     }, []);
 
-    const totalAccepted = useMemo(() => acceptedPatients.length, [acceptedPatients]);
+    useEffect(() => {
+        if (!currentDonor?.uid) return;
+        const unsub = subscribeRequestsForDonor(currentDonor.uid, "accepted", setAccepted);
+        return () => unsub();
+    }, [currentDonor?.uid]);
+
+    const acceptedPatients: AcceptedPatient[] = useMemo(
+        () =>
+            accepted.map((r) => ({
+                id: r.patientUid,
+                name: r.patientName || "Patient",
+                bloodGroup: r.patientBloodGroup || "N/A",
+                matchPercentage: r.score ?? 0,
+                urgency: r.patientUrgency || "Moderate",
+                location: r.patientLocation || "Location Not Provided",
+            })),
+        [accepted],
+    );
+
+    const totalAccepted = acceptedPatients.length;
 
     if (loading) {
         return (
@@ -137,7 +137,6 @@ export default function DonorMatches() {
                                     <div>
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <h3 className="font-extrabold text-gray-900 text-lg leading-tight group-hover:text-[#008080] transition-colors">{patient.name}</h3>
-                                            <VerifiedBadge user={patient as any} />
                                         </div>
                                         <div className="flex items-center gap-1.5 mt-1">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

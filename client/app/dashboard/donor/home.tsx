@@ -1,62 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { auth, db } from "@/lib/firebase";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { isVerified } from "@/lib/verification";
+import { acceptRequest, ConnectionRequest, ignoreRequest, subscribeRequestsForDonor } from "@/lib/requests";
 import VerificationGate from "@/app/components/VerificationGate";
-import VerifiedBadge from "@/app/components/VerifiedBadge";
-
-interface PatientRequest {
-    id: number;
-    name: string;
-    bloodGroup: string;
-    matchPercentage: number;
-    urgency: "Critical" | "High" | "Moderate";
-    location: string;
-    image?: string;
-}
 
 export default function DonorHome() {
     const [selectedFilter, setSelectedFilter] = useState<"All" | "High" | "Medium" | "Low">("All");
-    const [patientRequests, setPatientRequests] = useState<any[]>([]);
+    const [requests, setRequests] = useState<ConnectionRequest[]>([]);
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [working, setWorking] = useState<string | null>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // Fetch current user (Donor)
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
                     setCurrentUser({ uid: user.uid, ...userDoc.data() });
                 }
-
-                // Fetch verified Patients only. Unverified patients must
-                // be reviewed by a doctor before donors see them.
-                const patientsSnapshot = await getDocs(collection(db, "users"));
-                const patientsList = patientsSnapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .filter((u: any) => u.role === "patient" && isVerified(u));
-
-                // Map Firestore data to the PatientRequest interface
-                const patientsWithMatch = patientsList.map((p: any) => {
-                    // Generate a deterministic "match percentage" based on name/email hash for consistency
-                    // This is temporary until the real ML algorithm is connected
-                    const pseudoRandom = (p.uid || "").split("").reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0) % 60 + 40;
-
-                    return {
-                        ...p,
-                        matchPercentage: pseudoRandom,
-                        location: p.address || "Location Not Provided",
-                        name: p.fullName || "Unknown Patient",
-                        urgency: p.urgency || "Moderate",
-                        bloodGroup: p.bloodGroup || "Unknown"
-                    };
-                });
-
-                setPatientRequests(patientsWithMatch);
                 setLoading(false);
             } else {
                 setLoading(false);
@@ -66,13 +31,48 @@ export default function DonorHome() {
         return () => unsubscribe();
     }, []);
 
-    const filteredRequests = patientRequests.filter(request => {
-        if (selectedFilter === "All") return true;
-        if (selectedFilter === "High") return request.matchPercentage >= 80;
-        if (selectedFilter === "Medium") return request.matchPercentage >= 60 && request.matchPercentage < 80;
-        if (selectedFilter === "Low") return request.matchPercentage < 60;
-        return true;
-    });
+    useEffect(() => {
+        if (!currentUser?.uid) return;
+        const unsub = subscribeRequestsForDonor(currentUser.uid, "pending", setRequests);
+        return () => unsub();
+    }, [currentUser?.uid]);
+
+    const handleAccept = async (id: string) => {
+        setWorking(`accept:${id}`);
+        try {
+            await acceptRequest(id);
+        } catch (err) {
+            console.error("Accept failed:", err);
+            alert("Failed to accept request.");
+        } finally {
+            setWorking(null);
+        }
+    };
+
+    const handleIgnore = async (id: string) => {
+        setWorking(`ignore:${id}`);
+        try {
+            await ignoreRequest(id);
+        } catch (err) {
+            console.error("Ignore failed:", err);
+            alert("Failed to dismiss request.");
+        } finally {
+            setWorking(null);
+        }
+    };
+
+    const filteredRequests = useMemo(
+        () =>
+            requests.filter((r) => {
+                const score = r.score ?? 0;
+                if (selectedFilter === "All") return true;
+                if (selectedFilter === "High") return score >= 80;
+                if (selectedFilter === "Medium") return score >= 60 && score < 80;
+                if (selectedFilter === "Low") return score < 60;
+                return true;
+            }),
+        [requests, selectedFilter],
+    );
 
     if (loading) {
         return (
@@ -124,7 +124,7 @@ export default function DonorHome() {
                         </div>
 
                         <p className="text-white/90 ml-[64px] text-lg font-medium">
-                            You have {patientRequests.length} patient requests waiting for your response
+                            You have {requests.length} patient request{requests.length === 1 ? "" : "s"} waiting for your response
                         </p>
                     </div>
                 </div>
@@ -137,7 +137,7 @@ export default function DonorHome() {
             {/* Filter Section Header */}
             <div className="mb-8 relative z-10">
                 <h2 className="text-[#006967] text-3xl font-black tracking-tight mb-2">Patient Requests</h2>
-                <p className="text-gray-500 font-medium text-lg">Only verified patients are shown</p>
+                <p className="text-gray-500 font-medium text-lg">Pending requests from patients waiting for your response</p>
             </div>
 
             {/* Filter Bar */}
@@ -163,13 +163,24 @@ export default function DonorHome() {
                     </div>
                 </div>
                 <div className="mt-6 ml-2 font-bold text-gray-400 text-sm">
-                    Showing <span className="text-[#008080]">{filteredRequests.length}</span> of {patientRequests.length} verified patients
+                    Showing <span className="text-[#008080]">{filteredRequests.length}</span> of {requests.length} pending requests
                 </div>
             </div>
 
             {/* Requests Grid */}
+            {filteredRequests.length === 0 ? (
+                <div className="bg-white/70 backdrop-blur-2xl border border-white/50 rounded-[2.5rem] p-16 text-center shadow-xl">
+                    <h2 className="text-xl font-black text-slate-500 mb-2">No pending requests</h2>
+                    <p className="text-slate-400">When verified patients send you a connection request, they will appear here.</p>
+                </div>
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
-                {filteredRequests.map((request) => (
+                {filteredRequests.map((request) => {
+                    const score = request.score ?? 0;
+                    const urgency = request.patientUrgency || "Moderate";
+                    const isAccepting = working === `accept:${request.id}`;
+                    const isIgnoring = working === `ignore:${request.id}`;
+                    return (
                     <div key={request.id} className="group relative bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 p-7 shadow-2xl shadow-teal-900/[0.04] hover:shadow-teal-900/[0.1] transition-all duration-500 hover:-translate-y-2 flex flex-col">
                         {/* Header Section */}
                         <div className="flex justify-between items-start mb-6">
@@ -181,23 +192,22 @@ export default function DonorHome() {
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <h3 className="font-extrabold text-gray-900 text-lg leading-tight group-hover:text-[#008080] transition-colors">{request.name}</h3>
-                                        <VerifiedBadge user={request as any} />
+                                        <h3 className="font-extrabold text-gray-900 text-lg leading-tight group-hover:text-[#008080] transition-colors">{request.patientName || "Patient"}</h3>
                                     </div>
                                     <div className="flex items-center gap-1.5 mt-1">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
-                                        <p className="text-gray-400 text-xs font-semibold">{request.location}</p>
+                                        <p className="text-gray-400 text-xs font-semibold">{request.patientLocation || "Location not provided"}</p>
                                     </div>
                                 </div>
                             </div>
-                            <div className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border shadow-sm ${request.urgency === 'Critical' ? 'bg-red-50 text-red-600 border-red-100' :
-                                request.urgency === 'High' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                            <div className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border shadow-sm ${urgency === 'Critical' ? 'bg-red-50 text-red-600 border-red-100' :
+                                urgency === 'High' ? 'bg-orange-50 text-orange-600 border-orange-100' :
                                     'bg-teal-50 text-teal-600 border-teal-100'
                                 }`}>
-                                {request.urgency}
+                                {urgency}
                             </div>
                         </div>
 
@@ -205,12 +215,12 @@ export default function DonorHome() {
                         <div className="grid grid-cols-2 gap-4 mb-8">
                             <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100/50">
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Blood Type</span>
-                                <p className="text-[#008080] text-xl font-black">{request.bloodGroup}</p>
+                                <p className="text-[#008080] text-xl font-black">{request.patientBloodGroup || "—"}</p>
                             </div>
                             <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100/50">
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Match Level</span>
-                                <p className={`text-xl font-black ${request.matchPercentage >= 80 ? 'text-teal-600' : 'text-orange-600'}`}>
-                                    {request.matchPercentage >= 80 ? 'Elite' : 'Strong'}
+                                <p className={`text-xl font-black ${score >= 80 ? 'text-teal-600' : 'text-orange-600'}`}>
+                                    {score >= 80 ? 'Elite' : score >= 60 ? 'Strong' : 'Moderate'}
                                 </p>
                             </div>
                         </div>
@@ -220,15 +230,15 @@ export default function DonorHome() {
                             <div className="flex justify-between items-end mb-3">
                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Compatibility</p>
                                 <div className="flex items-baseline gap-0.5">
-                                    <span className="text-2xl font-black text-gray-900">{request.matchPercentage}</span>
+                                    <span className="text-2xl font-black text-gray-900">{score}</span>
                                     <span className="text-xs font-bold text-[#008080]">%</span>
                                 </div>
                             </div>
                             <div className="w-full bg-gray-100/80 rounded-full h-2.5 p-0.5 shadow-inner">
                                 <div
-                                    className={`h-full rounded-full shadow-lg transition-all duration-1000 ease-out relative overflow-hidden ${request.matchPercentage >= 80 ? 'bg-gradient-to-r from-[#26A69A] to-[#4DB6AC]' : 'bg-gradient-to-r from-[#FFB74D] to-[#FFA726]'
+                                    className={`h-full rounded-full shadow-lg transition-all duration-1000 ease-out relative overflow-hidden ${score >= 80 ? 'bg-gradient-to-r from-[#26A69A] to-[#4DB6AC]' : 'bg-gradient-to-r from-[#FFB74D] to-[#FFA726]'
                                         }`}
-                                    style={{ width: `${request.matchPercentage}%` }}
+                                    style={{ width: `${score}%` }}
                                 >
                                     <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
                                 </div>
@@ -237,16 +247,26 @@ export default function DonorHome() {
 
                         {/* Footer Action */}
                         <div className="mt-auto flex gap-3">
-                            <button className="flex-[2] bg-[#008080] hover:bg-[#006967] text-white font-black py-4 rounded-[1.25rem] transition-all duration-300 text-sm shadow-xl shadow-teal-900/10 hover:shadow-teal-900/30 active:scale-[0.98] border-b-4 border-teal-900/20">
-                                Accept Patient
+                            <button
+                                disabled={isAccepting || isIgnoring}
+                                onClick={() => handleAccept(request.id)}
+                                className="flex-[2] bg-[#008080] hover:bg-[#006967] text-white font-black py-4 rounded-[1.25rem] transition-all duration-300 text-sm shadow-xl shadow-teal-900/10 hover:shadow-teal-900/30 active:scale-[0.98] border-b-4 border-teal-900/20 disabled:opacity-60"
+                            >
+                                {isAccepting ? "Accepting…" : "Accept"}
                             </button>
-                            <button className="flex-1 bg-white hover:bg-gray-50 text-gray-400 hover:text-gray-600 font-bold py-4 rounded-[1.25rem] transition-all duration-300 text-xs active:scale-[0.98] border border-gray-100">
-                                Dismiss
+                            <button
+                                disabled={isAccepting || isIgnoring}
+                                onClick={() => handleIgnore(request.id)}
+                                className="flex-1 bg-white hover:bg-gray-50 text-gray-400 hover:text-gray-600 font-bold py-4 rounded-[1.25rem] transition-all duration-300 text-xs active:scale-[0.98] border border-gray-100 disabled:opacity-60"
+                            >
+                                {isIgnoring ? "…" : "Ignore"}
                             </button>
                         </div>
                     </div>
-                ))}
+                    );
+                })}
             </div>
+            )}
             </>
             )}
             <style jsx global>{`

@@ -12,6 +12,7 @@ import {
     statusTone,
     VerificationStatus,
 } from "@/lib/verification";
+import { notifyMatchFanOut, notifyVerificationDecision } from "@/lib/notifications";
 import HlaEditor from "@/app/components/HlaEditor";
 import { HlaTyping, hasHla } from "@/lib/hla";
 
@@ -102,8 +103,12 @@ export default function DoctorVerificationsPage() {
         setWorking(`approve:${id}`);
         setFeedback(null);
         try {
+            const target = users.find((u) => u.id === id);
+            const role = (target?.role === "donor" ? "donor" : "patient") as "patient" | "donor";
             await approveVerification(id, doctorUid, notes[id] || "");
             setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, verified: true, verificationStatus: "verified", verifiedAt: new Date().toISOString(), verifiedBy: doctorUid } : u)));
+            await notifyVerificationDecision({ uid: id, role, approved: true, notes: notes[id], doctorUid });
+            await notifyMatchFanOut({ uid: id, role });
             setFeedback({ type: "ok", message: "Verification approved." });
         } catch (err) {
             console.error(err);
@@ -118,8 +123,11 @@ export default function DoctorVerificationsPage() {
         setWorking(`reject:${id}`);
         setFeedback(null);
         try {
+            const target = users.find((u) => u.id === id);
+            const role = (target?.role === "donor" ? "donor" : "patient") as "patient" | "donor";
             await rejectVerification(id, doctorUid, notes[id] || "");
             setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, verified: false, verificationStatus: "rejected", verifiedAt: new Date().toISOString(), verifiedBy: doctorUid } : u)));
+            await notifyVerificationDecision({ uid: id, role, approved: false, notes: notes[id], doctorUid });
             setFeedback({ type: "ok", message: "Verification rejected." });
         } catch (err) {
             console.error(err);

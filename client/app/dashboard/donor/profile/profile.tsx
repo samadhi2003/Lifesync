@@ -12,6 +12,7 @@ import {
     statusTone,
     VerificationStatus,
 } from "@/lib/verification";
+import { notifyDoctorsOfReport } from "@/lib/notifications";
 import HlaEditor from "@/app/components/HlaEditor";
 import { HlaTyping } from "@/lib/hla";
 
@@ -151,6 +152,12 @@ export default function DonorProfile() {
             await updateDoc(doc(db, "users", currentUid), updateData);
 
             setProfile(prev => ({ ...prev, [type === 'hla' ? 'hlaReportURL' : 'medicalReportURL']: downloadURL }));
+            notifyDoctorsOfReport({
+                uid: currentUid,
+                uploaderName: profile.name,
+                role: "donor",
+                reportType: type,
+            }).catch((err) => console.warn("Doctor notification failed:", err));
             alert(`${type === 'hla' ? 'HLA' : 'Medical'} report updated successfully!`);
         } catch (error) {
             console.error(`Error uploading ${type} report:`, error);
