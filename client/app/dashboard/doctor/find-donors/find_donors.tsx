@@ -6,12 +6,27 @@ import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { isVerified } from "@/lib/verification";
 import VerifiedBadge from "@/app/components/VerifiedBadge";
+import { HlaTyping, LOCI, LOCUS_LABEL, Locus, pruneTyping } from "@/lib/hla";
+
+const LOCUS_HINTS: Record<Locus, [string, string]> = {
+    A: ["31", "33"],
+    B: ["35", "55"],
+    C: ["01", "04"],
+    DRB1: ["04", "07"],
+    DRB345: ["DRB4*01", "DRB4*01(N)"],
+    DQA1: ["02", "03"],
+    DQB1: ["03", "03"],
+    DPA1: ["01", "01"],
+    DPB1: ["02", "04"],
+};
 
 export default function FindDonors() {
     const [isSearching, setIsSearching] = useState(false);
     const [matches, setMatches] = useState<any[]>([]);
     const [uploading, setUploading] = useState(false);
     const [hlaUrl, setHlaUrl] = useState<string | null>(null);
+    const [hlaReportFile, setHlaReportFile] = useState<File | null>(null);
+    const [medicalReportFile, setMedicalReportFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [filters, setFilters] = useState({
         patientName: "",
@@ -19,6 +34,16 @@ export default function FindDonors() {
         urgency: "",
         dialysis: false
     });
+    const [hlaTyping, setHlaTyping] = useState<Partial<Record<Locus, [string, string]>>>({});
+
+    const setAllele = (locus: Locus, index: 0 | 1, value: string) => {
+        setHlaTyping((prev) => {
+            const current = prev[locus] || ["", ""];
+            const next: [string, string] = [current[0] || "", current[1] || ""];
+            next[index] = value;
+            return { ...prev, [locus]: next };
+        });
+    };
 
     const handleSavePatient = async () => {
         if (!filters.patientName || !filters.bloodGroup || !filters.urgency) {
@@ -28,16 +53,30 @@ export default function FindDonors() {
 
         try {
             setUploading(true); // Reusing uploading state for saving indicator
-            await addDoc(collection(db, "patients"), {
+
+            const doctorId = auth.currentUser?.uid;
+            const payload: Record<string, unknown> = {
                 name: filters.patientName,
                 bloodGroup: filters.bloodGroup,
                 urgency: filters.urgency,
                 onDialysis: filters.dialysis,
                 hlaUrl: hlaUrl || null,
-                doctorId: auth.currentUser?.uid,
+                doctorId,
                 createdAt: new Date().toISOString(),
-                status: "Searching" // Default status
+                status: "Searching",
+            };
+
+            const hlaPayload = pruneTyping({
+                ...(hlaTyping as HlaTyping),
+                enteredBy: doctorId,
+                enteredByRole: "doctor",
+                enteredAt: new Date().toISOString(),
             });
+            if (Object.keys(hlaPayload).some((k) => !["enteredBy", "enteredByRole", "enteredAt"].includes(k))) {
+                payload.hla = hlaPayload;
+            }
+
+            await addDoc(collection(db, "patients"), payload);
             alert("Patient details saved successfully!");
         } catch (error) {
             console.error("Error saving patient:", error);
@@ -47,26 +86,27 @@ export default function FindDonors() {
         }
     };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleHlaReportChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
+        setHlaReportFile(file);
         setUploading(true);
         try {
-            // Upload to hla_reports folder
             const timestamp = Date.now();
             const storageRef = ref(storage, `hla_reports/${timestamp}_${file.name}`);
             await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
-
-            setHlaUrl(downloadURL);
-            alert("HLA Report uploaded successfully!");
-        } catch (error) {
-            console.error("Error uploading HLA report:", error);
+            setHlaUrl(await getDownloadURL(storageRef));
+        } catch (err) {
+            console.error("HLA upload failed:", err);
             alert("Failed to upload HLA report.");
         } finally {
             setUploading(false);
         }
+    };
+
+    const handleMedicalReportChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) setMedicalReportFile(file);
     };
 
     const handleSearch = async () => {
@@ -127,107 +167,179 @@ export default function FindDonors() {
                     </div>
 
                     <div className="space-y-6">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Patient Name</label>
+                        <div className="space-y-2">
+                            <label className="block text-gray-500 text-xs font-semibold ml-1">Patient Name</label>
                             <input
                                 type="text"
                                 placeholder="Enter patient name"
-                                className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-5 py-4 text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#008080]/20 focus:bg-white transition-all"
+                                className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white transition-all text-sm"
                                 value={filters.patientName}
                                 onChange={(e) => setFilters({ ...filters, patientName: e.target.value })}
                             />
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Select blood group</label>
-                            <select
-                                className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-5 py-4 text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#008080]/20 focus:bg-white transition-all appearance-none"
-                                value={filters.bloodGroup}
-                                onChange={(e) => setFilters({ ...filters, bloodGroup: e.target.value })}
-                            >
-                                <option>Select your blood group</option>
-                                <option value="O+">O+</option>
-                                <option value="O-">O-</option>
-                                <option value="A+">A+</option>
-                                <option value="A-">A-</option>
-                                <option value="B+">B+</option>
-                                <option value="B-">B-</option>
-                                <option value="AB+">AB+</option>
-                                <option value="AB-">AB-</option>
-                            </select>
+                        <div className="space-y-2">
+                            <label className="block text-gray-500 text-xs font-semibold ml-1">Blood Group</label>
+                            <div className="relative">
+                                <select
+                                    className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white appearance-none transition-all cursor-pointer text-sm"
+                                    value={filters.bloodGroup}
+                                    onChange={(e) => setFilters({ ...filters, bloodGroup: e.target.value })}
+                                >
+                                    <option value="" disabled>Select your blood group</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                </select>
+                                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400">
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Select urgency level</label>
-                            <select
-                                className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-5 py-4 text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-[#008080]/20 focus:bg-white transition-all appearance-none"
-                                value={filters.urgency}
-                                onChange={(e) => setFilters({ ...filters, urgency: e.target.value })}
-                            >
-                                <option>Select urgency level</option>
-                                <option value="Critical">Critical</option>
-                                <option value="High">High</option>
-                                <option value="Moderate">Moderate</option>
-                            </select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 block mb-2">On Dialysis</label>
+                        <div className="space-y-2">
+                            <label className="block text-gray-500 text-xs font-semibold ml-1">On Dialysis?</label>
                             <div className="flex gap-4">
                                 <button
+                                    type="button"
                                     onClick={() => setFilters({ ...filters, dialysis: true })}
-                                    className={`flex-1 py-3 font-bold rounded-xl shadow-lg transition-all ${filters.dialysis ? 'bg-[#008080] text-white shadow-teal-900/20' : 'bg-white text-gray-400 border border-gray-100'}`}
+                                    className={`flex-1 py-3.5 rounded-lg border transition-all text-sm font-semibold ${filters.dialysis === true ? "bg-[#4AA3FF] text-white border-[#4AA3FF]" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"}`}
                                 >
                                     Yes
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={() => setFilters({ ...filters, dialysis: false })}
-                                    className={`flex-1 py-3 font-bold rounded-xl shadow-lg transition-all ${!filters.dialysis ? 'bg-[#008080] text-white shadow-teal-900/20' : 'bg-white text-gray-400 border border-gray-100'}`}
+                                    className={`flex-1 py-3.5 rounded-lg border transition-all text-sm font-semibold ${filters.dialysis === false ? "bg-[#4AA3FF] text-white border-[#4AA3FF]" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"}`}
                                 >
                                     No
                                 </button>
                             </div>
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">HLA Report uploaded</label>
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                className="hidden"
-                                accept=".pdf,.jpg,.png"
-                                onChange={handleFileUpload}
-                            />
-                            <div
-                                onClick={() => fileInputRef.current?.click()}
-                                className={`border-2 border-dashed ${hlaUrl ? 'border-teal-500 bg-teal-50/50' : 'border-gray-100 bg-gray-50/30'} rounded-[1.5rem] p-10 flex flex-col items-center justify-center gap-4 text-gray-400 hover:bg-gray-50/80 transition-all cursor-pointer relative`}
-                            >
-                                {uploading ? (
-                                    <div className="flex flex-col items-center gap-2">
-                                        <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-                                        <p className="text-xs font-bold text-teal-600">Uploading...</p>
-                                    </div>
-                                ) : hlaUrl ? (
-                                    <>
-                                        <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center text-teal-600">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        <div className="space-y-2">
+                            <label className="block text-gray-500 text-xs font-semibold ml-1">Urgency Level</label>
+                            <div className="relative">
+                                <select
+                                    className="w-full bg-[#F5F5F5] border border-transparent rounded-lg px-4 py-3.5 text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#008080]/50 focus:bg-white appearance-none transition-all cursor-pointer text-sm"
+                                    value={filters.urgency}
+                                    onChange={(e) => setFilters({ ...filters, urgency: e.target.value })}
+                                >
+                                    <option value="" disabled>Select urgency level</option>
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                    <option value="Critical">Critical</option>
+                                </select>
+                                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400">
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Manual HLA Typing Entry */}
+                        <div className="space-y-3 pt-2">
+                            <div>
+                                <label className="block text-gray-500 text-xs font-semibold ml-1">HLA Typing <span className="text-gray-300 font-normal">(optional, can be added later)</span></label>
+                                <p className="text-[10px] text-gray-400 ml-1 mt-1 leading-relaxed">
+                                    Transcribe each locus from the patient's Histocompatibility report. Enter both alleles per row using the broad serological number (e.g. <span className="font-mono">31</span>, <span className="font-mono">35</span>). Null alleles can be written as <span className="font-mono">DRB4*01(N)</span>.
+                                </p>
+                            </div>
+                            <div className="overflow-x-auto bg-[#F5F5F5] rounded-lg p-3">
+                                <table className="w-full text-sm border-separate border-spacing-y-1.5">
+                                    <thead>
+                                        <tr className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                                            <th className="text-left px-2 py-1">Locus</th>
+                                            <th className="text-left px-2 py-1">Allele 1</th>
+                                            <th className="text-left px-2 py-1">Allele 2</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {LOCI.map((locus) => {
+                                            const pair = hlaTyping[locus] || ["", ""];
+                                            return (
+                                                <tr key={locus}>
+                                                    <td className="px-2 align-middle">
+                                                        <span className="font-bold text-gray-700 text-xs">{LOCUS_LABEL[locus]}</span>
+                                                    </td>
+                                                    <td className="px-2">
+                                                        <input
+                                                            value={pair[0] || ""}
+                                                            onChange={(e) => setAllele(locus, 0, e.target.value)}
+                                                            placeholder={LOCUS_HINTS[locus][0]}
+                                                            className="w-full bg-white border border-transparent rounded-md px-3 py-2 text-xs font-mono text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#008080]/30 transition-all"
+                                                        />
+                                                    </td>
+                                                    <td className="px-2">
+                                                        <input
+                                                            value={pair[1] || ""}
+                                                            onChange={(e) => setAllele(locus, 1, e.target.value)}
+                                                            placeholder={LOCUS_HINTS[locus][1]}
+                                                            className="w-full bg-white border border-transparent rounded-md px-3 py-2 text-xs font-mono text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#008080]/30 transition-all"
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Compact HLA report attach pill */}
+                            <div className="flex items-center gap-2 pl-1">
+                                <label className="inline-flex items-center gap-2 text-[11px] text-gray-500 font-semibold cursor-pointer hover:text-[#008080] transition-colors group">
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        accept=".pdf"
+                                        onChange={handleHlaReportChange}
+                                        className="hidden"
+                                    />
+                                    <span className="w-7 h-7 rounded-full bg-[#F5F5F5] group-hover:bg-[#008080]/10 flex items-center justify-center text-gray-400 group-hover:text-[#008080] transition-colors">
+                                        {uploading && !hlaUrl ? (
+                                            <div className="w-3.5 h-3.5 border-2 border-[#008080] border-t-transparent rounded-full animate-spin"></div>
+                                        ) : (
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                                             </svg>
-                                        </div>
-                                        <div className="text-center">
-                                            <p className="font-bold text-teal-700">Upload Complete</p>
-                                            <p className="text-xs text-teal-600">Click to change file</p>
-                                        </div>
-                                    </>
+                                        )}
+                                    </span>
+                                    {hlaReportFile ? (
+                                        <span className="text-[#008080]">{hlaReportFile.name}</span>
+                                    ) : (
+                                        <span>Attach HLA report PDF <span className="text-gray-300 font-normal">(optional, supporting document)</span></span>
+                                    )}
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="block text-gray-500 text-xs font-semibold ml-1">Other Medical Reports <span className="text-gray-300 font-normal">(optional)</span></label>
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-[#008080] transition-colors bg-white relative">
+                                <input
+                                    type="file"
+                                    accept=".pdf"
+                                    onChange={handleMedicalReportChange}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                />
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg>
+                                {medicalReportFile ? (
+                                    <p className="text-[#008080] text-xs font-semibold">{medicalReportFile.name}</p>
                                 ) : (
                                     <>
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                                        </svg>
-                                        <div className="text-center">
-                                            <p className="font-bold text-gray-500">Click to upload or drag and drop</p>
-                                            <p className="text-xs">PDF only</p>
-                                        </div>
+                                        <p className="text-gray-400 text-xs">Click to upload or drag and drop</p>
+                                        <p className="text-gray-300 text-[10px] mt-1">PDF only</p>
                                     </>
                                 )}
                             </div>
