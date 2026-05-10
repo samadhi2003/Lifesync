@@ -401,36 +401,37 @@ export default function PatientProfile() {
                         const tone = statusTone(status);
                         const canRequest = status === "unverified" || status === "rejected";
                         return (
-                            <div className="bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 p-8 shadow-2xl shadow-slate-900/[0.03]">
+                            <div className={`${tone.card} backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden`}>
+                                <div className="absolute top-0 right-0 -mr-12 -mt-12 w-48 h-48 bg-white/5 rounded-full blur-3xl"></div>
                                 <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-[#008080]">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                        </svg>
-                                    </div>
-                                    <h2 className="text-xl font-bold text-gray-900">Verification</h2>
-                                </div>
-                                <p className="text-gray-500 text-xs leading-relaxed mb-4">
-                                    A LifeSync doctor must review your profile and HLA documentation before you can appear in donor matches. Only verified patients are shown verified donors.
-                                </p>
-                                <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider mb-4 ${tone.badge}`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${tone.dot}`}></span>
-                                    {statusLabel(status)}
-                                </div>
-                                {profile.verificationRequestedAt && status === "pending" && (
-                                    <p className="text-[10px] text-gray-400 font-medium mb-4">Requested on {new Date(profile.verificationRequestedAt).toLocaleDateString()}.</p>
-                                )}
-                                {profile.verificationNotes && status === "rejected" && (
-                                    <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-xs text-red-700 mb-4">
-                                        <p className="font-bold mb-1">Doctor's note</p>
-                                        {profile.verificationNotes}
-                                    </div>
-                                )}
-                                <button
-                                    disabled={!canRequest || requestingVerification}
-                                    onClick={handleRequestVerification}
-                                    className="w-full py-3 bg-[#008080] hover:bg-[#006967] text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                                >
+                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tone.badge}`}>
+                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                         </svg>
+                                     </div>
+                                     <h2 className={`text-xl font-bold ${tone.text}`}>Verification</h2>
+                                 </div>
+                                 <p className={`${tone.subtext} text-xs leading-relaxed mb-4`}>
+                                     A LifeSync doctor must review your profile and HLA documentation before you can appear in donor matches. Only verified patients are shown verified donors.
+                                 </p>
+                                 <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider mb-4 ${tone.badge}`}>
+                                     <span className={`w-1.5 h-1.5 rounded-full ${tone.dot}`}></span>
+                                     {statusLabel(status)}
+                                 </div>
+                                 {profile.verificationRequestedAt && status === "pending" && (
+                                     <p className={`text-[10px] ${tone.subtext} font-medium mb-4`}>Requested on {new Date(profile.verificationRequestedAt).toLocaleDateString()}.</p>
+                                 )}
+                                 {profile.verificationNotes && status === "rejected" && (
+                                     <div className="bg-white/10 border border-white/20 rounded-2xl p-4 text-xs text-white mb-4">
+                                         <p className="font-bold mb-1">Doctor's note</p>
+                                         {profile.verificationNotes}
+                                     </div>
+                                 )}
+                                 <button
+                                     disabled={!canRequest || requestingVerification}
+                                     onClick={handleRequestVerification}
+                                     className="w-full py-3 bg-white text-gray-900 hover:bg-white/90 font-black text-xs uppercase tracking-widest rounded-2xl transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-lg"
+                                 >
                                     {requestingVerification
                                         ? "Submitting…"
                                         : status === "pending"
