@@ -13,6 +13,7 @@ import {
     VerificationStatus,
 } from "@/lib/verification";
 import { notifyDoctorsOfReport } from "@/lib/notifications";
+import { resizeImageToDataUrl } from "@/lib/imageResize";
 import HlaEditor from "@/app/components/HlaEditor";
 import { HlaTyping } from "@/lib/hla";
 
@@ -114,21 +115,20 @@ export default function DonorProfile() {
         const file = e.target.files?.[0];
         if (!file || !currentUid) return;
 
+        if (!file.type.startsWith("image/")) {
+            alert("Please choose an image file.");
+            return;
+        }
+
         setUploading(true);
         try {
-            const storageRef = ref(storage, `profile_pictures/${currentUid}`);
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
-
-            await updateDoc(doc(db, "users", currentUid), {
-                photoURL: downloadURL
-            });
-
-            setProfile(prev => ({ ...prev, photoURL: downloadURL }));
+            const dataUrl = await resizeImageToDataUrl(file, 256, 0.85);
+            await updateDoc(doc(db, "users", currentUid), { photoURL: dataUrl });
+            setProfile(prev => ({ ...prev, photoURL: dataUrl }));
             alert("Profile picture updated!");
         } catch (error) {
             console.error("Error uploading image:", error);
-            alert("Failed to upload image.");
+            alert(`Failed to update profile picture: ${(error as Error).message || "Unknown error"}`);
         } finally {
             setUploading(false);
         }
