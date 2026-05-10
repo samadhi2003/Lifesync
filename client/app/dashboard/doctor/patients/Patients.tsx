@@ -2,11 +2,41 @@
 
 import { useEffect, useState } from "react";
 import { db, auth } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { computeMatchPercentage } from "@/lib/matching";
 import { isVerified } from "@/lib/verification";
 import VerifiedBadge from "@/app/components/VerifiedBadge";
+import { HlaTyping, LOCI, LOCUS_LABEL, Locus, hasHla, pruneTyping } from "@/lib/hla";
+
+type EditDraft = {
+    name: string;
+    urgency: string;
+    bloodGroup: string;
+    onDialysis: boolean;
+    hla: HlaTyping;
+    labReference: string;
+};
+
+const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+const URGENCY_LEVELS = ["Low", "Medium", "High", "Critical"];
+
+function buildDraft(patient: any): EditDraft {
+    const hla: HlaTyping = {};
+    const source = (patient?.hla as HlaTyping | undefined) || {};
+    for (const locus of LOCI) {
+        const pair = source[locus];
+        hla[locus] = [pair?.[0] || "", pair?.[1] || ""];
+    }
+    return {
+        name: patient?.name || "",
+        urgency: patient?.urgency || "Medium",
+        bloodGroup: patient?.bloodGroup || "",
+        onDialysis: !!patient?.onDialysis,
+        hla,
+        labReference: source.labReference || "",
+    };
+}
 
 type SuggestedDonor = {
     id: string;
@@ -25,6 +55,107 @@ export default function Patients() {
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [suggestedDonors, setSuggestedDonors] = useState<SuggestedDonor[]>([]);
     const [suggestedLoading, setSuggestedLoading] = useState(false);
+    const [primaryPhysician, setPrimaryPhysician] = useState<string>("");
+    const [isEditing, setIsEditing] = useState(false);
+    const [draft, setDraft] = useState<EditDraft | null>(null);
+    const [savingEdit, setSavingEdit] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+
+    useEffect(() => {
+        setIsEditing(false);
+        setDraft(selectedPatient ? buildDraft(selectedPatient) : null);
+    }, [selectedPatient?.id]);
+
+    const canManagePatient =
+        !!selectedPatient?.doctorId &&
+        !!currentUser?.uid &&
+        selectedPatient.doctorId === currentUser.uid;
+
+    const handleStartEdit = () => {
+        if (!selectedPatient) return;
+        setDraft(buildDraft(selectedPatient));
+        setIsEditing(true);
+    };
+
+    const handleCancelEdit = () => {
+        setDraft(selectedPatient ? buildDraft(selectedPatient) : null);
+        setIsEditing(false);
+    };
+
+    const handleDraftField = <K extends keyof EditDraft>(key: K, value: EditDraft[K]) => {
+        setDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
+    };
+
+    const handleDraftAllele = (locus: Locus, index: 0 | 1, value: string) => {
+        setDraft((prev) => {
+            if (!prev) return prev;
+            const current = prev.hla[locus] || ["", ""];
+            const nextPair: [string, string] = [current[0] || "", current[1] || ""];
+            nextPair[index] = value;
+            return { ...prev, hla: { ...prev.hla, [locus]: nextPair } };
+        });
+    };
+
+    const handleSaveEdit = async () => {
+        if (!selectedPatient || !draft) return;
+        if (!draft.name.trim()) {
+            alert("Name is required.");
+            return;
+        }
+        if (!draft.bloodGroup) {
+            alert("Blood group is required.");
+            return;
+        }
+        setSavingEdit(true);
+        try {
+            const hlaPayload = pruneTyping({
+                ...draft.hla,
+                labReference: draft.labReference || undefined,
+                enteredBy: currentUser?.uid,
+                enteredByRole: "doctor",
+                enteredAt: new Date().toISOString(),
+            });
+            const hasHlaContent = Object.keys(hlaPayload).some(
+                (k) => !["enteredBy", "enteredByRole", "enteredAt"].includes(k),
+            );
+            const updates: Record<string, unknown> = {
+                name: draft.name.trim(),
+                urgency: draft.urgency,
+                bloodGroup: draft.bloodGroup,
+                onDialysis: draft.onDialysis,
+                hla: hasHlaContent ? hlaPayload : null,
+            };
+            await updateDoc(doc(db, "patients", selectedPatient.id), updates);
+            const updatedPatient = { ...selectedPatient, ...updates };
+            setSelectedPatient(updatedPatient);
+            setPatients((prev) => prev.map((p) => (p.id === selectedPatient.id ? updatedPatient : p)));
+            setIsEditing(false);
+        } catch (err) {
+            console.error("Failed to update patient:", err);
+            alert("Failed to update patient.");
+        } finally {
+            setSavingEdit(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!selectedPatient) return;
+        const confirmed = window.confirm(
+            `Delete patient "${selectedPatient.name}"? This cannot be undone.`,
+        );
+        if (!confirmed) return;
+        setDeleting(true);
+        try {
+            await deleteDoc(doc(db, "patients", selectedPatient.id));
+            setPatients((prev) => prev.filter((p) => p.id !== selectedPatient.id));
+            setSelectedPatient(null);
+        } catch (err) {
+            console.error("Failed to delete patient:", err);
+            alert("Failed to delete patient.");
+        } finally {
+            setDeleting(false);
+        }
+    };
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -32,6 +163,28 @@ export default function Patients() {
         });
         return () => unsubscribe();
     }, []);
+
+    useEffect(() => {
+        if (!selectedPatient?.doctorId) {
+            setPrimaryPhysician("");
+            return;
+        }
+        let cancelled = false;
+        (async () => {
+            try {
+                const snap = await getDoc(doc(db, "users", selectedPatient.doctorId));
+                if (cancelled) return;
+                const data = snap.exists() ? (snap.data() as any) : null;
+                setPrimaryPhysician(data?.fullName || data?.email || "");
+            } catch (err) {
+                console.error("Failed to load primary physician:", err);
+                if (!cancelled) setPrimaryPhysician("");
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedPatient?.doctorId]);
 
     useEffect(() => {
         if (!selectedPatient) {
@@ -233,31 +386,123 @@ export default function Patients() {
                                 </div>
                                 <div className="space-y-6">
                                     <div>
-                                        <button
-                                            onClick={() => setSelectedPatient(null)}
-                                            className="mb-4 flex items-center gap-2 text-gray-400 hover:text-[#008080] transition-colors text-sm font-bold uppercase tracking-widest"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                                            </svg>
-                                            Back to List
-                                        </button>
+                                        <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
+                                            <button
+                                                onClick={() => setSelectedPatient(null)}
+                                                className="flex items-center gap-2 text-gray-400 hover:text-[#008080] transition-colors text-sm font-bold uppercase tracking-widest"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                                </svg>
+                                                Back to List
+                                            </button>
+                                            {canManagePatient && (
+                                                <div className="flex items-center gap-2">
+                                                    {isEditing ? (
+                                                        <>
+                                                            <button
+                                                                onClick={handleSaveEdit}
+                                                                disabled={savingEdit}
+                                                                className="px-4 py-2 bg-[#008080] hover:bg-[#006967] text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all disabled:opacity-60"
+                                                            >
+                                                                {savingEdit ? "Saving…" : "Save"}
+                                                            </button>
+                                                            <button
+                                                                onClick={handleCancelEdit}
+                                                                disabled={savingEdit}
+                                                                className="px-4 py-2 bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-slate-200 transition-all"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <button
+                                                                onClick={handleStartEdit}
+                                                                className="px-4 py-2 bg-[#008080] hover:bg-[#006967] text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all"
+                                                            >
+                                                                Edit
+                                                            </button>
+                                                            <button
+                                                                onClick={handleDelete}
+                                                                disabled={deleting}
+                                                                className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 text-xs font-bold uppercase tracking-widest rounded-xl transition-all disabled:opacity-60"
+                                                            >
+                                                                {deleting ? "Deleting…" : "Delete"}
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Full Name</label>
-                                        <p className="text-2xl font-black text-gray-900">{selectedPatient.name}</p>
+                                        {isEditing && draft ? (
+                                            <input
+                                                value={draft.name}
+                                                onChange={(e) => handleDraftField("name", e.target.value)}
+                                                className="w-full bg-gray-50 rounded-lg px-3 py-2 text-2xl font-black text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008080]/30"
+                                            />
+                                        ) : (
+                                            <p className="text-2xl font-black text-gray-900">{selectedPatient.name}</p>
+                                        )}
                                     </div>
                                     <div className="grid grid-cols-2 gap-6">
                                         <div>
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Urgency</label>
-                                            <p className={`text-xl font-bold ${selectedPatient.urgency === 'Critical' ? 'text-red-500' : 'text-gray-900'}`}>{selectedPatient.urgency}</p>
+                                            {isEditing && draft ? (
+                                                <select
+                                                    value={draft.urgency}
+                                                    onChange={(e) => handleDraftField("urgency", e.target.value)}
+                                                    className="w-full bg-gray-50 rounded-lg px-3 py-2 text-base font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008080]/30"
+                                                >
+                                                    {URGENCY_LEVELS.map((u) => (
+                                                        <option key={u} value={u}>{u}</option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <p className={`text-xl font-bold ${selectedPatient.urgency === 'Critical' ? 'text-red-500' : 'text-gray-900'}`}>{selectedPatient.urgency}</p>
+                                            )}
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Blood Group</label>
-                                            <p className="text-xl font-bold text-gray-900">{selectedPatient.bloodGroup}</p>
+                                            {isEditing && draft ? (
+                                                <select
+                                                    value={draft.bloodGroup}
+                                                    onChange={(e) => handleDraftField("bloodGroup", e.target.value)}
+                                                    className="w-full bg-gray-50 rounded-lg px-3 py-2 text-base font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008080]/30"
+                                                >
+                                                    <option value="" disabled>Select blood group</option>
+                                                    {BLOOD_GROUPS.map((bg) => (
+                                                        <option key={bg} value={bg}>{bg}</option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <p className="text-xl font-bold text-gray-900">{selectedPatient.bloodGroup}</p>
+                                            )}
                                         </div>
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Dialysis Status</label>
-                                        <p className="text-xl font-bold text-gray-900">{selectedPatient.onDialysis ? "On Dialysis" : "Not on Dialysis"}</p>
+                                        {isEditing && draft ? (
+                                            <div className="flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDraftField("onDialysis", true)}
+                                                    className={`flex-1 py-2 rounded-lg border text-sm font-semibold transition-all ${draft.onDialysis ? "bg-[#008080] text-white border-[#008080]" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"}`}
+                                                >
+                                                    On Dialysis
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDraftField("onDialysis", false)}
+                                                    className={`flex-1 py-2 rounded-lg border text-sm font-semibold transition-all ${!draft.onDialysis ? "bg-[#008080] text-white border-[#008080]" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"}`}
+                                                >
+                                                    Not on Dialysis
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <p className="text-xl font-bold text-gray-900">{selectedPatient.onDialysis ? "On Dialysis" : "Not on Dialysis"}</p>
+                                        )}
                                     </div>
                                     {selectedPatient.hlaUrl && (
                                         <div className="pt-4">
@@ -298,12 +543,97 @@ export default function Patients() {
                                 <div className="bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 p-8 shadow-xl flex-1">
                                     <h3 className="text-lg font-bold text-gray-900 mb-4">Medical Contacts</h3>
                                     <p className="text-gray-500 text-sm font-medium">
-                                        {currentUser?.email
-                                            ? `Primary Physician: ${currentUser.displayName || currentUser.email}`
-                                            : "Primary Physician: —"}
+                                        Primary Physician: {primaryPhysician || "—"}
                                     </p>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* HLA Typing */}
+                        <div className="bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 p-10 shadow-xl">
+                            <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
+                                <h3 className="text-2xl font-black text-gray-900">HLA Typing</h3>
+                                {!isEditing && selectedPatient.hla?.labReference && (
+                                    <span className="text-xs font-semibold text-slate-500">Lab ref: {selectedPatient.hla.labReference}</span>
+                                )}
+                            </div>
+                            {isEditing && draft ? (
+                                <div className="space-y-4">
+                                    <div className="overflow-x-auto bg-white border border-gray-100 rounded-3xl shadow-sm">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-gray-50">
+                                                    <th className="text-left py-3 px-4">Locus</th>
+                                                    <th className="text-left py-3 px-4">Allele 1</th>
+                                                    <th className="text-left py-3 px-4">Allele 2</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {LOCI.map((locus) => {
+                                                    const pair = draft.hla[locus] || ["", ""];
+                                                    return (
+                                                        <tr key={locus} className="border-b border-gray-50">
+                                                            <td className="py-2 px-4 font-bold text-[#1A1C1E]">{LOCUS_LABEL[locus]}</td>
+                                                            <td className="py-2 px-4">
+                                                                <input
+                                                                    value={pair[0] || ""}
+                                                                    onChange={(e) => handleDraftAllele(locus, 0, e.target.value)}
+                                                                    className="w-full bg-gray-50 rounded-lg px-3 py-2 text-sm font-mono text-[#1A1C1E] focus:outline-none focus:ring-2 focus:ring-[#008080]/30"
+                                                                />
+                                                            </td>
+                                                            <td className="py-2 px-4">
+                                                                <input
+                                                                    value={pair[1] || ""}
+                                                                    onChange={(e) => handleDraftAllele(locus, 1, e.target.value)}
+                                                                    className="w-full bg-gray-50 rounded-lg px-3 py-2 text-sm font-mono text-[#1A1C1E] focus:outline-none focus:ring-2 focus:ring-[#008080]/30"
+                                                                />
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Lab Reference (optional)</label>
+                                        <input
+                                            value={draft.labReference}
+                                            onChange={(e) => handleDraftField("labReference", e.target.value)}
+                                            placeholder="e.g. 3578/24M"
+                                            className="w-full bg-gray-50 rounded-lg px-3 py-2 text-sm font-mono text-[#1A1C1E] focus:outline-none focus:ring-2 focus:ring-[#008080]/30"
+                                        />
+                                    </div>
+                                </div>
+                            ) : hasHla(selectedPatient.hla as HlaTyping) ? (
+                                <div className="overflow-x-auto bg-white border border-gray-100 rounded-3xl shadow-sm">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-gray-50">
+                                                <th className="text-left py-3 px-4">Locus</th>
+                                                <th className="text-left py-3 px-4">Allele 1</th>
+                                                <th className="text-left py-3 px-4">Allele 2</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {LOCI.map((locus) => {
+                                                const pair = (selectedPatient.hla as HlaTyping | undefined)?.[locus];
+                                                const a1 = pair?.[0]?.trim() || "—";
+                                                const a2 = pair?.[1]?.trim() || "—";
+                                                const empty = a1 === "—" && a2 === "—";
+                                                return (
+                                                    <tr key={locus} className={`border-b border-gray-50 ${empty ? "bg-slate-50" : "bg-white"}`}>
+                                                        <td className="py-3 px-4 font-bold text-[#1A1C1E]">{LOCUS_LABEL[locus]}</td>
+                                                        <td className="py-3 px-4 font-mono text-slate-700">{a1}</td>
+                                                        <td className="py-3 px-4 font-mono text-slate-700">{a2}</td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <p className="text-slate-400 font-medium text-sm">No HLA typing on file for this patient yet.</p>
+                            )}
                         </div>
 
                         {/* Suggested Donors */}
