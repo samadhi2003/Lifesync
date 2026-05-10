@@ -16,7 +16,7 @@ export default function DoctorLayout({
 }) {
     const pathname = usePathname();
     const router = useRouter();
-    const [searchQuery, setSearchQuery] = useState("");
+
     const [profile, setProfile] = useState<{ name: string; photoURL: string; specialization: string }>({
         name: "",
         photoURL: "",
@@ -121,16 +121,6 @@ export default function DoctorLayout({
                             );
                         })}
                     </div>
-
-                    {/* New Consultation Button */}
-                    <div className="mt-10 px-2">
-                        <button className="w-full bg-[#008080] hover:bg-[#006967] text-white rounded-xl py-3.5 px-4 font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-teal-700/10 transition-all">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                            </svg>
-                            New Consultation
-                        </button>
-                    </div>
                 </nav>
 
                 {/* Bottom User Section */}
@@ -172,23 +162,7 @@ export default function DoctorLayout({
             {/* Main Content Area */}
             <div className="flex-1 ml-72 flex flex-col min-h-screen">
                 {/* Top Header */}
-                <header className="h-20 flex justify-between items-center px-10 bg-transparent">
-                    {/* Search Bar */}
-                    <div className="relative w-96">
-                        <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-400">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </span>
-                        <input
-                            type="text"
-                            placeholder="Search patients, donors, or records..."
-                            className="w-full bg-white border-0 rounded-2xl py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-[#008080]/20 transition-all shadow-sm shadow-gray-200"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-
+                <header className="h-20 flex justify-end items-center px-10 bg-transparent">
                     {/* Top Right Actions */}
                     <div className="flex items-center gap-6">
                         <NotificationBell inboxHref="/dashboard/doctor/notifications" />
