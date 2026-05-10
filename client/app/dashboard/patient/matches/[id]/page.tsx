@@ -7,7 +7,9 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { computeMatch, isBloodCompatible, matchLabel } from "@/lib/matching";
 import { HlaScoreResult, HlaTyping } from "@/lib/hla";
+import { RequestStatus, createRequest, getRequestForPair, requestId } from "@/lib/requests";
 import HlaCompareTable from "@/app/components/HlaCompareTable";
+import ChatPanel from "@/app/components/ChatPanel";
 
 type DonorProfile = {
     id: string;
@@ -20,7 +22,7 @@ type DonorProfile = {
     hlaResult: HlaScoreResult;
     patientHla: HlaTyping | null;
     donorHla: HlaTyping | null;
-    status: "ACCEPTED" | "REQUESTED";
+    requestStatus: RequestStatus | "not_requested";
     bio: string;
     medicalInfo: {
         bloodTypeCompatible: boolean;
@@ -43,12 +45,25 @@ export default function DonorProfilePage(props: { params: Promise<{ id: string }
     const [donor, setDonor] = useState<DonorProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
+    const [me, setMe] = useState<{ uid: string; fullName?: string; bloodGroup?: string; urgency?: string; address?: string } | null>(null);
+    const [requesting, setRequesting] = useState(false);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             try {
                 const patientDoc = user ? await getDoc(doc(db, "users", user.uid)) : null;
                 const patient = patientDoc?.exists() ? { uid: user!.uid, ...patientDoc.data() } : null;
+                if (user && patient) {
+                    setMe({
+                        uid: user.uid,
+                        fullName: (patient as any).fullName,
+                        bloodGroup: (patient as any).bloodGroup,
+                        urgency: (patient as any).urgency,
+                        address: (patient as any).address,
+                    });
+                } else {
+                    setMe(null);
+                }
 
                 const donorDoc = await getDoc(doc(db, "users", params.id));
                 if (!donorDoc.exists()) {
@@ -59,6 +74,16 @@ export default function DonorProfilePage(props: { params: Promise<{ id: string }
 
                 const data = donorDoc.data() as any;
                 const detail = computeMatch(patient as any, { id: params.id, ...data });
+
+                let requestStatus: RequestStatus | "not_requested" = "not_requested";
+                if (user) {
+                    try {
+                        const req = await getRequestForPair(user.uid, params.id);
+                        if (req) requestStatus = req.status;
+                    } catch (reqErr) {
+                        console.warn("Failed to load request status:", reqErr);
+                    }
+                }
 
                 setDonor({
                     id: params.id,
@@ -71,7 +96,7 @@ export default function DonorProfilePage(props: { params: Promise<{ id: string }
                     hlaResult: detail.hla,
                     patientHla: (patient as any)?.hla || null,
                     donorHla: data.hla || null,
-                    status: detail.score >= 80 ? "ACCEPTED" : "REQUESTED",
+                    requestStatus,
                     bio: data.bio || "This donor has not provided a personal bio yet.",
                     medicalInfo: {
                         bloodTypeCompatible: isBloodCompatible(
@@ -97,6 +122,30 @@ export default function DonorProfilePage(props: { params: Promise<{ id: string }
         if (match >= 80) return "bg-[#00BFA5]";
         if (match >= 50) return "bg-[#FFB300]";
         return "bg-[#EF5350]";
+    };
+
+    const handleSendRequest = async () => {
+        if (!me || !donor) return;
+        if (donor.requestStatus === "pending" || donor.requestStatus === "accepted") return;
+        setRequesting(true);
+        try {
+            await createRequest({
+                patientUid: me.uid,
+                donorUid: donor.id,
+                patientName: me.fullName,
+                donorName: donor.name,
+                patientBloodGroup: me.bloodGroup,
+                patientUrgency: me.urgency,
+                patientLocation: me.address,
+                score: donor.match,
+            });
+            setDonor((prev) => (prev ? { ...prev, requestStatus: "pending" } : prev));
+        } catch (err) {
+            console.error("Failed to send request:", err);
+            alert("Failed to send request. Please try again.");
+        } finally {
+            setRequesting(false);
+        }
     };
 
     if (loading) {
@@ -151,9 +200,20 @@ export default function DonorProfilePage(props: { params: Promise<{ id: string }
                             <h1 className="text-2xl font-bold text-slate-800 mb-1">{donor.name}</h1>
                             <p className="text-slate-500 font-medium mb-4">{donor.location}</p>
 
-                            <div className="bg-teal-50 text-teal-700 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-8 border border-teal-100">
-                                {donor.status}
-                            </div>
+                            {(() => {
+                                const map: Record<string, { label: string; classes: string }> = {
+                                    accepted: { label: "Accepted", classes: "bg-teal-50 text-teal-700 border-teal-100" },
+                                    pending: { label: "Awaiting response", classes: "bg-amber-50 text-amber-700 border-amber-100" },
+                                    ignored: { label: "Declined", classes: "bg-slate-100 text-slate-500 border-slate-200" },
+                                    not_requested: { label: "Not requested", classes: "bg-slate-100 text-slate-500 border-slate-200" },
+                                };
+                                const pill = map[donor.requestStatus] ?? map.not_requested;
+                                return (
+                                    <div className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-8 border ${pill.classes}`}>
+                                        {pill.label}
+                                    </div>
+                                );
+                            })()}
 
                             <div className="w-full grid grid-cols-2 gap-4 mb-8">
                                 <div className="bg-white/50 p-4 rounded-2xl border border-white/60">
@@ -167,13 +227,27 @@ export default function DonorProfilePage(props: { params: Promise<{ id: string }
                             </div>
 
                             <div className="flex flex-col w-full gap-3">
-                                {donor.contact ? (
-                                    <a href={`tel:${donor.contact}`} className="w-full bg-[#00796B] hover:bg-[#00695C] text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-teal-900/10 active:scale-95 text-center">
-                                        {donor.contact}
-                                    </a>
+                                {donor.requestStatus === "accepted" ? (
+                                    donor.contact ? (
+                                        <a href={`tel:${donor.contact}`} className="w-full bg-[#00796B] hover:bg-[#00695C] text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-teal-900/10 active:scale-95 text-center">
+                                            {donor.contact}
+                                        </a>
+                                    ) : (
+                                        <button disabled className="w-full bg-[#00796B]/40 text-white font-bold py-3.5 rounded-xl cursor-not-allowed">
+                                            No contact on file
+                                        </button>
+                                    )
+                                ) : donor.requestStatus === "pending" ? (
+                                    <button disabled className="w-full bg-amber-100 text-amber-700 font-bold py-3.5 rounded-xl cursor-not-allowed border border-amber-200">
+                                        Awaiting response
+                                    </button>
                                 ) : (
-                                    <button disabled className="w-full bg-[#00796B]/40 text-white font-bold py-3.5 rounded-xl cursor-not-allowed">
-                                        No contact on file
+                                    <button
+                                        onClick={handleSendRequest}
+                                        disabled={requesting || !me}
+                                        className="w-full bg-[#00796B] hover:bg-[#00695C] text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-teal-900/10 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        {requesting ? "Sending…" : donor.requestStatus === "ignored" ? "Send Request Again" : "Send Request"}
                                     </button>
                                 )}
                             </div>
@@ -183,6 +257,17 @@ export default function DonorProfilePage(props: { params: Promise<{ id: string }
 
                 {/* Right Column: Detailed Info */}
                 <div className="lg:col-span-2 space-y-6">
+                    {donor.requestStatus === "accepted" && me && (
+                        <ChatPanel
+                            chatId={requestId(me.uid, donor.id)}
+                            currentUid={me.uid}
+                            currentName={me.fullName}
+                            partnerUid={donor.id}
+                            partnerName={donor.name}
+                            partnerRole="donor"
+                        />
+                    )}
+
                     {/* Match Score Card */}
                     <div className="bg-white/60 backdrop-blur-xl border border-white/50 rounded-3xl p-8 shadow-xl relative overflow-hidden">
                         <div className="flex items-center justify-between mb-6">

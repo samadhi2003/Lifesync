@@ -93,9 +93,9 @@ export async function createRequest(args: {
         body: `${args.patientName || "A patient"} requested to connect with you${
             typeof args.score === "number" ? ` (${args.score}% match)` : ""
         }.`,
-        link: "/dashboard/donor",
+        link: `/dashboard/donor/matches/${args.patientUid}`,
         createdBy: args.patientUid,
-        meta: { requestId: id, patientUid: args.patientUid },
+        meta: { requestId: id, counterpartyUid: args.patientUid },
     }).catch((err) => console.warn("notify donor failed:", err));
 }
 
@@ -114,9 +114,9 @@ export async function acceptRequest(id: string): Promise<void> {
         type: "match",
         title: "Request accepted",
         body: `${data.donorName || "A donor"} accepted your request. You can now reach out.`,
-        link: "/dashboard/patient/matches",
+        link: `/dashboard/patient/matches/${data.donorUid}`,
         createdBy: data.donorUid,
-        meta: { requestId: id, donorUid: data.donorUid },
+        meta: { requestId: id, counterpartyUid: data.donorUid },
     }).catch((err) => console.warn("notify patient failed:", err));
 }
 

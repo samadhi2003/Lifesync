@@ -54,9 +54,31 @@ async function registerSwWithConfig(): Promise<ServiceWorkerRegistration | null>
         messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "",
         appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "",
     });
-    return navigator.serviceWorker.register(`/firebase-messaging-sw.js?${params.toString()}`, {
+    const registration = await navigator.serviceWorker.register(`/firebase-messaging-sw.js?${params.toString()}`, {
         scope: "/firebase-cloud-messaging-push-scope",
     });
+
+    // FCM's getToken() will call PushManager.subscribe(), which needs an
+    // *active* worker. register() resolves as soon as the SW is registered,
+    // possibly still in `installing` state — wait until it's active.
+    if (!registration.active) {
+        await new Promise<void>((resolve) => {
+            const sw = registration.installing || registration.waiting;
+            if (!sw) {
+                resolve();
+                return;
+            }
+            const onState = () => {
+                if (sw.state === "activated") {
+                    sw.removeEventListener("statechange", onState);
+                    resolve();
+                }
+            };
+            sw.addEventListener("statechange", onState);
+        });
+    }
+
+    return registration;
 }
 
 export async function enablePush(uid: string): Promise<{ ok: boolean; reason?: string; token?: string }> {

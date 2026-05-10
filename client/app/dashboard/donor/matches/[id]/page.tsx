@@ -7,7 +7,9 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { computeMatch, isBloodCompatible, matchLabel } from "@/lib/matching";
 import { HlaScoreResult, HlaTyping } from "@/lib/hla";
+import { RequestStatus, acceptRequest, getRequestForPair, ignoreRequest, requestId } from "@/lib/requests";
 import HlaCompareTable from "@/app/components/HlaCompareTable";
+import ChatPanel from "@/app/components/ChatPanel";
 
 type PatientProfile = {
     id: string;
@@ -27,6 +29,7 @@ type PatientProfile = {
         hlaReportUrl?: string;
     };
     contact?: string;
+    requestStatus: RequestStatus | "not_requested";
 };
 
 function calculateAge(dob?: string | null): number | null {
@@ -49,12 +52,47 @@ export default function PatientProfilePage(props: { params: Promise<{ id: string
     const [patient, setPatient] = useState<PatientProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
+    const [me, setMe] = useState<{ uid: string; fullName?: string } | null>(null);
+    const [acting, setActing] = useState(false);
+
+    const handleAccept = async () => {
+        if (!me || !patient) return;
+        setActing(true);
+        try {
+            await acceptRequest(requestId(patient.id, me.uid));
+            setPatient((prev) => (prev ? { ...prev, requestStatus: "accepted" } : prev));
+        } catch (err) {
+            console.error("Failed to accept request:", err);
+            alert("Failed to accept request.");
+        } finally {
+            setActing(false);
+        }
+    };
+
+    const handleIgnore = async () => {
+        if (!me || !patient) return;
+        setActing(true);
+        try {
+            await ignoreRequest(requestId(patient.id, me.uid));
+            setPatient((prev) => (prev ? { ...prev, requestStatus: "ignored" } : prev));
+        } catch (err) {
+            console.error("Failed to ignore request:", err);
+            alert("Failed to ignore request.");
+        } finally {
+            setActing(false);
+        }
+    };
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             try {
                 const donorDoc = user ? await getDoc(doc(db, "users", user.uid)) : null;
                 const donor = donorDoc?.exists() ? { uid: user!.uid, ...donorDoc.data() } : null;
+                if (user && donor) {
+                    setMe({ uid: user.uid, fullName: (donor as any).fullName });
+                } else {
+                    setMe(null);
+                }
 
                 const patientDoc = await getDoc(doc(db, "users", params.id));
                 if (!patientDoc.exists()) {
@@ -65,6 +103,16 @@ export default function PatientProfilePage(props: { params: Promise<{ id: string
 
                 const data = patientDoc.data() as any;
                 const detail = computeMatch({ id: params.id, ...data }, donor as any);
+
+                let requestStatus: RequestStatus | "not_requested" = "not_requested";
+                if (user) {
+                    try {
+                        const req = await getRequestForPair(params.id, user.uid);
+                        if (req) requestStatus = req.status;
+                    } catch (reqErr) {
+                        console.warn("Failed to load request status:", reqErr);
+                    }
+                }
 
                 setPatient({
                     id: params.id,
@@ -87,6 +135,7 @@ export default function PatientProfilePage(props: { params: Promise<{ id: string
                         hlaReportUrl: data.hlaReportURL,
                     },
                     contact: data.contact,
+                    requestStatus,
                 });
             } catch (err) {
                 console.error("Failed to load patient profile:", err);
@@ -157,9 +206,23 @@ export default function PatientProfilePage(props: { params: Promise<{ id: string
                             <h1 className="text-2xl font-bold text-slate-800 mb-1">{patient.name}</h1>
                             <p className="text-slate-500 font-medium mb-4">{patient.location}</p>
 
-                            <div className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-8 border ${urgencyTone(patient.urgency)}`}>
+                            <div className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-3 border ${urgencyTone(patient.urgency)}`}>
                                 {patient.urgency} urgency
                             </div>
+                            {(() => {
+                                const map: Record<string, { label: string; classes: string }> = {
+                                    accepted: { label: "Connected", classes: "bg-teal-50 text-teal-700 border-teal-100" },
+                                    pending: { label: "Pending request", classes: "bg-amber-50 text-amber-700 border-amber-100" },
+                                    ignored: { label: "Declined", classes: "bg-slate-100 text-slate-500 border-slate-200" },
+                                    not_requested: { label: "No request", classes: "bg-slate-100 text-slate-500 border-slate-200" },
+                                };
+                                const pill = map[patient.requestStatus] ?? map.not_requested;
+                                return (
+                                    <div className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-8 border ${pill.classes}`}>
+                                        {pill.label}
+                                    </div>
+                                );
+                            })()}
 
                             <div className="w-full grid grid-cols-2 gap-4 mb-8">
                                 <div className="bg-white/50 p-4 rounded-2xl border border-white/60">
@@ -173,13 +236,40 @@ export default function PatientProfilePage(props: { params: Promise<{ id: string
                             </div>
 
                             <div className="flex flex-col w-full gap-3">
-                                {patient.contact ? (
-                                    <a href={`tel:${patient.contact}`} className="w-full bg-[#00796B] hover:bg-[#00695C] text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-teal-900/10 active:scale-95 text-center">
-                                        {patient.contact}
-                                    </a>
+                                {patient.requestStatus === "accepted" ? (
+                                    patient.contact ? (
+                                        <a href={`tel:${patient.contact}`} className="w-full bg-[#00796B] hover:bg-[#00695C] text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-teal-900/10 active:scale-95 text-center">
+                                            {patient.contact}
+                                        </a>
+                                    ) : (
+                                        <button disabled className="w-full bg-[#00796B]/40 text-white font-bold py-3.5 rounded-xl cursor-not-allowed">
+                                            No contact on file
+                                        </button>
+                                    )
+                                ) : patient.requestStatus === "pending" ? (
+                                    <div className="flex gap-2 w-full">
+                                        <button
+                                            onClick={handleAccept}
+                                            disabled={acting}
+                                            className="flex-1 bg-[#00796B] hover:bg-[#00695C] text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-teal-900/10 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                                        >
+                                            {acting ? "…" : "Accept"}
+                                        </button>
+                                        <button
+                                            onClick={handleIgnore}
+                                            disabled={acting}
+                                            className="flex-1 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 font-bold py-3.5 rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                        >
+                                            Ignore
+                                        </button>
+                                    </div>
+                                ) : patient.requestStatus === "ignored" ? (
+                                    <button disabled className="w-full bg-slate-100 text-slate-500 font-bold py-3.5 rounded-xl cursor-not-allowed border border-slate-200">
+                                        Declined
+                                    </button>
                                 ) : (
-                                    <button disabled className="w-full bg-[#00796B]/40 text-white font-bold py-3.5 rounded-xl cursor-not-allowed">
-                                        No contact on file
+                                    <button disabled className="w-full bg-slate-100 text-slate-500 font-bold py-3.5 rounded-xl cursor-not-allowed border border-slate-200">
+                                        No request from this patient
                                     </button>
                                 )}
                             </div>
@@ -189,6 +279,17 @@ export default function PatientProfilePage(props: { params: Promise<{ id: string
 
                 {/* Right Column: Detailed Info */}
                 <div className="lg:col-span-2 space-y-6">
+                    {patient.requestStatus === "accepted" && me && (
+                        <ChatPanel
+                            chatId={requestId(patient.id, me.uid)}
+                            currentUid={me.uid}
+                            currentName={me.fullName}
+                            partnerUid={patient.id}
+                            partnerName={patient.name}
+                            partnerRole="patient"
+                        />
+                    )}
+
                     {/* Match Score Card */}
                     <div className="bg-white/60 backdrop-blur-xl border border-white/50 rounded-3xl p-8 shadow-xl relative overflow-hidden">
                         <div className="flex items-center justify-between mb-6">

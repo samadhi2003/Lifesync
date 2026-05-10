@@ -29,6 +29,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${poppins.variable} antialiased`}
         style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}
+        suppressHydrationWarning
       >
         {children}
       </body>

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { auth, db, storage } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { resizeImageToDataUrl } from "@/lib/imageResize";
 import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
 
 export default function DoctorProfile() {
@@ -90,20 +90,19 @@ export default function DoctorProfile() {
         const file = e.target.files?.[0];
         if (!file || !currentUid) return;
 
+        if (!file.type.startsWith("image/")) {
+            alert("Please choose an image file.");
+            return;
+        }
+
         setUploading(true);
         try {
-            const storageRef = ref(storage, `profile_pictures/${currentUid}`);
-            await uploadBytes(storageRef, file);
-            const downloadURL = await getDownloadURL(storageRef);
-
-            await updateDoc(doc(db, "users", currentUid), {
-                photoURL: downloadURL
-            });
-
-            setProfile(prev => ({ ...prev, photoURL: downloadURL }));
+            const dataUrl = await resizeImageToDataUrl(file, 256, 0.85);
+            await updateDoc(doc(db, "users", currentUid), { photoURL: dataUrl });
+            setProfile((prev) => ({ ...prev, photoURL: dataUrl }));
         } catch (error) {
             console.error("Error uploading image:", error);
-            alert("Failed to upload image.");
+            alert(`Failed to update profile picture: ${(error as Error).message || "Unknown error"}`);
         } finally {
             setUploading(false);
         }

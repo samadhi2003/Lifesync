@@ -26,6 +26,7 @@ export default function NotificationBell({ inboxHref = "/dashboard/notifications
     const [pushPermission, setPushPermission] = useState<NotificationPermission | "unsupported">("default");
     const [pushBusy, setPushBusy] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const seenIdsRef = useRef<Set<string> | null>(null);
 
     useEffect(() => {
         const unsub = onAuthStateChanged(auth, setUser);
@@ -33,8 +34,31 @@ export default function NotificationBell({ inboxHref = "/dashboard/notifications
     }, []);
 
     useEffect(() => {
-        if (!user) return;
-        const unsub = subscribeToNotifications(user.uid, setItems);
+        if (!user) {
+            seenIdsRef.current = null;
+            return;
+        }
+        const unsub = subscribeToNotifications(user.uid, (next) => {
+            // First snapshot for this user → just record ids without firing
+            // OS toasts (otherwise every existing unread fires on page load).
+            if (seenIdsRef.current === null) {
+                seenIdsRef.current = new Set(next.map((n) => n.id));
+                setItems(next);
+                return;
+            }
+            const seen = seenIdsRef.current;
+            const fresh = next.filter((n) => !seen.has(n.id) && !n.read);
+            for (const item of fresh) {
+                seen.add(item.id);
+                fireOsNotification(item);
+            }
+            // Also catch ids that disappeared so re-arrivals can re-fire.
+            const stillPresent = new Set(next.map((n) => n.id));
+            for (const id of Array.from(seen)) {
+                if (!stillPresent.has(id)) seen.delete(id);
+            }
+            setItems(next);
+        });
         return () => unsub();
     }, [user]);
 
@@ -164,8 +188,48 @@ export default function NotificationBell({ inboxHref = "/dashboard/notifications
     );
 }
 
+function fireOsNotification(item: AppNotification): void {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+    try {
+        const href = resolveLink(item);
+        const n = new Notification(item.title, {
+            body: item.body,
+            tag: item.id,
+            data: { href },
+        });
+        n.onclick = () => {
+            try {
+                window.focus();
+                if (href) window.location.assign(href);
+                n.close();
+            } catch {
+                /* noop */
+            }
+        };
+    } catch (err) {
+        console.warn("OS notification failed:", err);
+    }
+}
+
+function resolveLink(item: AppNotification): string | undefined {
+    if (item.type === "match") {
+        const meta = (item.meta || {}) as { counterpartyUid?: string; patientUid?: string; donorUid?: string };
+        const role = item.recipientRole;
+        const counterpartyUid =
+            meta.counterpartyUid ||
+            (role === "donor" ? meta.patientUid : undefined) ||
+            (role === "patient" ? meta.donorUid : undefined);
+        if (counterpartyUid && (role === "patient" || role === "donor")) {
+            return `/dashboard/${role}/matches/${counterpartyUid}`;
+        }
+    }
+    return item.link;
+}
+
 function NotificationRow({ item, onClick }: { item: AppNotification; onClick: () => void }) {
     const tone = TONE_BY_TYPE[item.type] || TONE_BY_TYPE.announcement;
+    const href = resolveLink(item);
     const Inner = (
         <div className={`flex gap-3 px-5 py-3 hover:bg-slate-50/60 transition-colors ${item.read ? "" : "bg-teal-50/30"}`}>
             <span className={`mt-1 w-2 h-2 rounded-full shrink-0 ${item.read ? "bg-transparent" : tone.dot}`}></span>
@@ -178,9 +242,9 @@ function NotificationRow({ item, onClick }: { item: AppNotification; onClick: ()
             </div>
         </div>
     );
-    if (item.link) {
+    if (href) {
         return (
-            <Link href={item.link} onClick={onClick} className="block">
+            <Link href={href} onClick={onClick} className="block">
                 {Inner}
             </Link>
         );
