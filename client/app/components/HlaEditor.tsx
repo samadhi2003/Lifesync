@@ -122,7 +122,36 @@ export default function HlaEditor({ uid, initial, actorRole, actorUid, onSaved }
                 <p className="text-sm text-slate-400 font-medium">No HLA typing on file yet.</p>
             )}
 
-            {(present || editing) && (
+            {present && !editing && (
+                <div className="overflow-x-auto bg-white border border-gray-100 rounded-2xl">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 border-b border-gray-50">
+                                <th className="text-left py-3 px-4">Locus</th>
+                                <th className="text-left py-3 px-4">Allele 1</th>
+                                <th className="text-left py-3 px-4">Allele 2</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {LOCI.map((locus) => {
+                                const pair = initial?.[locus];
+                                const a1 = pair?.[0]?.trim() || "—";
+                                const a2 = pair?.[1]?.trim() || "—";
+                                const empty = a1 === "—" && a2 === "—";
+                                return (
+                                    <tr key={locus} className={`border-b border-gray-50 ${empty ? "bg-slate-50" : "bg-white"}`}>
+                                        <td className="py-3 px-4 font-bold text-[#1A1C1E]">{LOCUS_LABEL[locus]}</td>
+                                        <td className="py-3 px-4 font-mono text-slate-700">{a1}</td>
+                                        <td className="py-3 px-4 font-mono text-slate-700">{a2}</td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            {editing && (
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm border-separate border-spacing-y-2">
                         <thead>
@@ -134,7 +163,7 @@ export default function HlaEditor({ uid, initial, actorRole, actorUid, onSaved }
                         </thead>
                         <tbody>
                             {LOCI.map((locus) => {
-                                const pair = (editing ? draft[locus] : initial?.[locus]) || ["", ""];
+                                const pair = draft[locus] || ["", ""];
                                 return (
                                     <tr key={locus}>
                                         <td className="px-2 align-middle">
@@ -142,20 +171,18 @@ export default function HlaEditor({ uid, initial, actorRole, actorUid, onSaved }
                                         </td>
                                         <td className="px-2">
                                             <input
-                                                disabled={!editing}
                                                 value={pair[0] || ""}
-                                                placeholder={editing ? LOCUS_HINTS[locus].split(",")[0]?.replace("e.g.", "").trim() : ""}
+                                                placeholder={LOCUS_HINTS[locus].split(",")[0]?.replace("e.g.", "").trim()}
                                                 onChange={(e) => setAllele(locus, 0, e.target.value)}
-                                                className="w-full bg-gray-50 border-0 rounded-lg px-3 py-2 text-sm font-mono text-[#1A1C1E] focus:ring-2 focus:ring-[#008080]/20 disabled:opacity-90 disabled:cursor-default"
+                                                className="w-full bg-gray-50 border-0 rounded-lg px-3 py-2 text-sm font-mono text-[#1A1C1E] focus:ring-2 focus:ring-[#008080]/20"
                                             />
                                         </td>
                                         <td className="px-2">
                                             <input
-                                                disabled={!editing}
                                                 value={pair[1] || ""}
-                                                placeholder={editing ? LOCUS_HINTS[locus].split(",")[1]?.trim() : ""}
+                                                placeholder={LOCUS_HINTS[locus].split(",")[1]?.trim()}
                                                 onChange={(e) => setAllele(locus, 1, e.target.value)}
-                                                className="w-full bg-gray-50 border-0 rounded-lg px-3 py-2 text-sm font-mono text-[#1A1C1E] focus:ring-2 focus:ring-[#008080]/20 disabled:opacity-90 disabled:cursor-default"
+                                                className="w-full bg-gray-50 border-0 rounded-lg px-3 py-2 text-sm font-mono text-[#1A1C1E] focus:ring-2 focus:ring-[#008080]/20"
                                             />
                                         </td>
                                     </tr>
