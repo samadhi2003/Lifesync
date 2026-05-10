@@ -125,8 +125,24 @@ export default function NotificationsInbox() {
     );
 }
 
+function resolveLink(item: AppNotification): string | undefined {
+    if (item.type === "match") {
+        const meta = (item.meta || {}) as { counterpartyUid?: string; patientUid?: string; donorUid?: string };
+        const role = item.recipientRole;
+        const counterpartyUid =
+            meta.counterpartyUid ||
+            (role === "donor" ? meta.patientUid : undefined) ||
+            (role === "patient" ? meta.donorUid : undefined);
+        if (counterpartyUid && (role === "patient" || role === "donor")) {
+            return `/dashboard/${role}/matches/${counterpartyUid}`;
+        }
+    }
+    return item.link;
+}
+
 function Row({ item, onClick }: { item: AppNotification; onClick: () => void }) {
     const dot = DOT_BY_TYPE[item.type] || "bg-slate-400";
+    const href = resolveLink(item);
     const inner = (
         <div className={`px-6 py-4 flex items-start gap-4 hover:bg-slate-50/40 transition-colors ${item.read ? "" : "bg-teal-50/30"}`}>
             <span className={`mt-2 w-2 h-2 rounded-full shrink-0 ${item.read ? "bg-transparent border border-slate-200" : dot}`}></span>
@@ -141,9 +157,9 @@ function Row({ item, onClick }: { item: AppNotification; onClick: () => void }) 
             </div>
         </div>
     );
-    if (item.link) {
+    if (href) {
         return (
-            <Link href={item.link} onClick={onClick} className="block">
+            <Link href={href} onClick={onClick} className="block">
                 {inner}
             </Link>
         );

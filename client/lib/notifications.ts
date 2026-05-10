@@ -169,7 +169,7 @@ export async function notifyMatchFanOut(args: {
             : computeMatchPercentage(self as never, candidate as never);
         if (score < SCORE_FLOOR) continue;
 
-        const link = `/dashboard/${oppositeRole}/matches`;
+        const link = `/dashboard/${oppositeRole}/matches/${args.uid}`;
         writes.push(
             createNotification({
                 recipientUid: candidate.id as string,

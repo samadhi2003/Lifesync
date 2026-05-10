@@ -26,6 +26,7 @@ export default function NotificationBell({ inboxHref = "/dashboard/notifications
     const [pushPermission, setPushPermission] = useState<NotificationPermission | "unsupported">("default");
     const [pushBusy, setPushBusy] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const seenIdsRef = useRef<Set<string> | null>(null);
 
     useEffect(() => {
         const unsub = onAuthStateChanged(auth, setUser);
@@ -33,8 +34,31 @@ export default function NotificationBell({ inboxHref = "/dashboard/notifications
     }, []);
 
     useEffect(() => {
-        if (!user) return;
-        const unsub = subscribeToNotifications(user.uid, setItems);
+        if (!user) {
+            seenIdsRef.current = null;
+            return;
+        }
+        const unsub = subscribeToNotifications(user.uid, (next) => {
+            // First snapshot for this user → just record ids without firing
+            // OS toasts (otherwise every existing unread fires on page load).
+            if (seenIdsRef.current === null) {
+                seenIdsRef.current = new Set(next.map((n) => n.id));
+                setItems(next);
+                return;
+            }
+            const seen = seenIdsRef.current;
+            const fresh = next.filter((n) => !seen.has(n.id) && !n.read);
+            for (const item of fresh) {
+                seen.add(item.id);
+                fireOsNotification(item);
+            }
+            // Also catch ids that disappeared so re-arrivals can re-fire.
+            const stillPresent = new Set(next.map((n) => n.id));
+            for (const id of Array.from(seen)) {
+                if (!stillPresent.has(id)) seen.delete(id);
+            }
+            setItems(next);
+        });
         return () => unsub();
     }, [user]);
 
@@ -89,6 +113,22 @@ export default function NotificationBell({ inboxHref = "/dashboard/notifications
         if (!result.ok && result.reason) alert(result.reason);
     };
 
+    const handleTestNotification = () => {
+        try {
+            if (!("Notification" in window) || Notification.permission !== "granted") {
+                alert("Notifications aren't allowed in this browser yet.");
+                return;
+            }
+            new Notification("LifeSync test", {
+                body: "If you're seeing this, OS-level notifications work.",
+                tag: "lifesync-test",
+            });
+        } catch (err) {
+            console.warn("Test notification failed:", err);
+            alert("Failed to fire test notification — check the console for details.");
+        }
+    };
+
     const iconColor = tone === "light" ? "text-white/80 hover:text-white" : "text-gray-400 hover:text-[#008080]";
 
     return (
@@ -125,21 +165,41 @@ export default function NotificationBell({ inboxHref = "/dashboard/notifications
                         )}
                     </div>
 
-                    {pushSupported && pushPermission !== "granted" && pushPermission !== "denied" && (
-                        <div className="px-5 py-3 bg-teal-50/60 border-b border-teal-100/60 flex items-center justify-between gap-3">
-                            <div>
-                                <p className="text-xs font-bold text-[#006967]">Enable browser push</p>
-                                <p className="text-[11px] text-slate-500">Get notified even when this tab is closed.</p>
-                            </div>
-                            <button
-                                onClick={handleEnablePush}
-                                disabled={pushBusy}
-                                className="px-3 py-1.5 bg-[#008080] hover:bg-[#006967] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg disabled:opacity-50"
-                            >
-                                {pushBusy ? "…" : "Enable"}
-                            </button>
+                    <div className="px-5 py-3 bg-slate-50/60 border-b border-gray-100 flex items-center justify-between gap-3">
+                        <div className="text-[11px] font-medium text-slate-500">
+                            OS toasts:{" "}
+                            <span className={
+                                pushPermission === "granted" ? "text-teal-700 font-bold" :
+                                pushPermission === "denied" ? "text-red-600 font-bold" :
+                                pushPermission === "unsupported" ? "text-slate-500 font-bold" :
+                                "text-amber-700 font-bold"
+                            }>
+                                {pushPermission === "granted" ? "Enabled" :
+                                 pushPermission === "denied" ? "Blocked in browser" :
+                                 pushPermission === "unsupported" ? "Unsupported" :
+                                 "Not enabled"}
+                            </span>
                         </div>
-                    )}
+                        <div className="flex items-center gap-2">
+                            {pushPermission !== "granted" && pushPermission !== "denied" && pushPermission !== "unsupported" && (
+                                <button
+                                    onClick={handleEnablePush}
+                                    disabled={pushBusy}
+                                    className="px-3 py-1.5 bg-[#008080] hover:bg-[#006967] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg disabled:opacity-50"
+                                >
+                                    {pushBusy ? "…" : "Enable"}
+                                </button>
+                            )}
+                            {pushPermission === "granted" && (
+                                <button
+                                    onClick={handleTestNotification}
+                                    className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-[10px] font-bold uppercase tracking-widest rounded-lg"
+                                >
+                                    Test
+                                </button>
+                            )}
+                        </div>
+                    </div>
 
                     <div className="max-h-96 overflow-y-auto divide-y divide-gray-50">
                         {items.length === 0 ? (
@@ -164,8 +224,48 @@ export default function NotificationBell({ inboxHref = "/dashboard/notifications
     );
 }
 
+function fireOsNotification(item: AppNotification): void {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+    try {
+        const href = resolveLink(item);
+        const n = new Notification(item.title, {
+            body: item.body,
+            tag: item.id,
+            data: { href },
+        });
+        n.onclick = () => {
+            try {
+                window.focus();
+                if (href) window.location.assign(href);
+                n.close();
+            } catch {
+                /* noop */
+            }
+        };
+    } catch (err) {
+        console.warn("OS notification failed:", err);
+    }
+}
+
+function resolveLink(item: AppNotification): string | undefined {
+    if (item.type === "match") {
+        const meta = (item.meta || {}) as { counterpartyUid?: string; patientUid?: string; donorUid?: string };
+        const role = item.recipientRole;
+        const counterpartyUid =
+            meta.counterpartyUid ||
+            (role === "donor" ? meta.patientUid : undefined) ||
+            (role === "patient" ? meta.donorUid : undefined);
+        if (counterpartyUid && (role === "patient" || role === "donor")) {
+            return `/dashboard/${role}/matches/${counterpartyUid}`;
+        }
+    }
+    return item.link;
+}
+
 function NotificationRow({ item, onClick }: { item: AppNotification; onClick: () => void }) {
     const tone = TONE_BY_TYPE[item.type] || TONE_BY_TYPE.announcement;
+    const href = resolveLink(item);
     const Inner = (
         <div className={`flex gap-3 px-5 py-3 hover:bg-slate-50/60 transition-colors ${item.read ? "" : "bg-teal-50/30"}`}>
             <span className={`mt-1 w-2 h-2 rounded-full shrink-0 ${item.read ? "bg-transparent" : tone.dot}`}></span>
@@ -178,9 +278,9 @@ function NotificationRow({ item, onClick }: { item: AppNotification; onClick: ()
             </div>
         </div>
     );
-    if (item.link) {
+    if (href) {
         return (
-            <Link href={item.link} onClick={onClick} className="block">
+            <Link href={href} onClick={onClick} className="block">
                 {Inner}
             </Link>
         );
