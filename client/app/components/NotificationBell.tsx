@@ -113,22 +113,6 @@ export default function NotificationBell({ inboxHref = "/dashboard/notifications
         if (!result.ok && result.reason) alert(result.reason);
     };
 
-    const handleTestNotification = () => {
-        try {
-            if (!("Notification" in window) || Notification.permission !== "granted") {
-                alert("Notifications aren't allowed in this browser yet.");
-                return;
-            }
-            new Notification("LifeSync test", {
-                body: "If you're seeing this, OS-level notifications work.",
-                tag: "lifesync-test",
-            });
-        } catch (err) {
-            console.warn("Test notification failed:", err);
-            alert("Failed to fire test notification — check the console for details.");
-        }
-    };
-
     const iconColor = tone === "light" ? "text-white/80 hover:text-white" : "text-gray-400 hover:text-[#008080]";
 
     return (
@@ -165,41 +149,21 @@ export default function NotificationBell({ inboxHref = "/dashboard/notifications
                         )}
                     </div>
 
-                    <div className="px-5 py-3 bg-slate-50/60 border-b border-gray-100 flex items-center justify-between gap-3">
-                        <div className="text-[11px] font-medium text-slate-500">
-                            OS toasts:{" "}
-                            <span className={
-                                pushPermission === "granted" ? "text-teal-700 font-bold" :
-                                pushPermission === "denied" ? "text-red-600 font-bold" :
-                                pushPermission === "unsupported" ? "text-slate-500 font-bold" :
-                                "text-amber-700 font-bold"
-                            }>
-                                {pushPermission === "granted" ? "Enabled" :
-                                 pushPermission === "denied" ? "Blocked in browser" :
-                                 pushPermission === "unsupported" ? "Unsupported" :
-                                 "Not enabled"}
-                            </span>
+                    {pushSupported && pushPermission !== "granted" && pushPermission !== "denied" && (
+                        <div className="px-5 py-3 bg-teal-50/60 border-b border-teal-100/60 flex items-center justify-between gap-3">
+                            <div>
+                                <p className="text-xs font-bold text-[#006967]">Enable browser push</p>
+                                <p className="text-[11px] text-slate-500">Get notified even when this tab is closed.</p>
+                            </div>
+                            <button
+                                onClick={handleEnablePush}
+                                disabled={pushBusy}
+                                className="px-3 py-1.5 bg-[#008080] hover:bg-[#006967] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg disabled:opacity-50"
+                            >
+                                {pushBusy ? "…" : "Enable"}
+                            </button>
                         </div>
-                        <div className="flex items-center gap-2">
-                            {pushPermission !== "granted" && pushPermission !== "denied" && pushPermission !== "unsupported" && (
-                                <button
-                                    onClick={handleEnablePush}
-                                    disabled={pushBusy}
-                                    className="px-3 py-1.5 bg-[#008080] hover:bg-[#006967] text-white text-[10px] font-bold uppercase tracking-widest rounded-lg disabled:opacity-50"
-                                >
-                                    {pushBusy ? "…" : "Enable"}
-                                </button>
-                            )}
-                            {pushPermission === "granted" && (
-                                <button
-                                    onClick={handleTestNotification}
-                                    className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-[10px] font-bold uppercase tracking-widest rounded-lg"
-                                >
-                                    Test
-                                </button>
-                            )}
-                        </div>
-                    </div>
+                    )}
 
                     <div className="max-h-96 overflow-y-auto divide-y divide-gray-50">
                         {items.length === 0 ? (
