@@ -1,4 +1,8 @@
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+
 export default function Features() {
+    const { t } = useLanguage();
+    
     return (
         <section className="py-24 bg-white relative overflow-hidden">
             {/* Background Pattern */}
@@ -7,9 +11,9 @@ export default function Features() {
             <div className="container mx-auto px-6 text-center relative z-10">
                 <div className="mb-16 animate-fade-in-up">
                     <span className="text-teal-600 font-bold uppercase tracking-wider text-sm">Features</span>
-                    <h2 className="text-4xl font-bold text-slate-900 mt-2 mb-4">Why LifeSync?</h2>
+                    <h2 className="text-4xl font-bold text-slate-900 mt-2 mb-4">{t("features.title")}</h2>
                     <p className="text-slate-600 max-w-2xl mx-auto">
-                        Cutting-edge technology meets compassionate care to save lives
+                        {t("features.subtitle")}
                     </p>
                 </div>
 
@@ -23,11 +27,10 @@ export default function Features() {
                             </svg>
                         </div>
                         <h3 className="font-bold text-slate-800 text-xl mb-3">
-                            AI-Powered Matching
+                            {t("features.smartMatch")}
                         </h3>
                         <p className="text-slate-600 text-sm leading-relaxed">
-                            Advanced algorithms to predict the best biological matches, ensuring
-                            higher success rates and better outcomes.
+                            {t("features.smartMatchDesc")}
                         </p>
                     </div>
 
@@ -40,11 +43,10 @@ export default function Features() {
                             </svg>
                         </div>
                         <h3 className="font-bold text-slate-800 text-xl mb-3">
-                            Ethical & Transparent
+                            {t("features.secureDoc")}
                         </h3>
                         <p className="text-slate-600 text-sm leading-relaxed">
-                            Full transparency throughout the process, adhering to the highest
-                            ethical medical standards and regulations.
+                            {t("features.secureDocDesc")}
                         </p>
                     </div>
 
@@ -57,11 +59,10 @@ export default function Features() {
                             </svg>
                         </div>
                         <h3 className="font-bold text-slate-800 text-xl mb-3">
-                            Direct Connection
+                            {t("features.realTime")}
                         </h3>
                         <p className="text-slate-600 text-sm leading-relaxed">
-                            Secure messaging and coordination platform to connect patients,
-                            donors and doctors seamlessly.
+                            {t("features.realTimeDesc")}
                         </p>
                     </div>
                 </div>

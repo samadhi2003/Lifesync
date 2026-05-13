@@ -1,7 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export default function Footer() {
+    const { t } = useLanguage();
     const currentYear = new Date().getFullYear();
 
     return (
@@ -22,8 +24,7 @@ export default function Footer() {
                             </span>
                         </div>
                         <p className="text-slate-400 leading-relaxed mb-6 max-w-md">
-                            Connecting patients with lifesaving donors through AI-powered matching.
-                            Making kidney transplants more accessible, ethical, and transparent.
+                            {t("footer.slogan")}
                         </p>
 
                         {/* Social Links */}
@@ -55,7 +56,7 @@ export default function Footer() {
 
                     {/* Quick Links */}
                     <div>
-                        <h3 className="font-bold text-lg mb-4 font-heading">Quick Links</h3>
+                        <h3 className="font-bold text-lg mb-4 font-heading">{t("footer.quickLinks")}</h3>
                         <ul className="space-y-3">
                             {["About Us", "How It Works", "For Patients", "For Donors", "For Doctors"].map((link, index) => (
                                 <li key={index}>
@@ -73,7 +74,7 @@ export default function Footer() {
 
                     {/* Resources */}
                     <div>
-                        <h3 className="font-bold text-lg mb-4 font-heading">Resources</h3>
+                        <h3 className="font-bold text-lg mb-4 font-heading">{t("footer.legal")}</h3>
                         <ul className="space-y-3">
                             {["FAQ", "Privacy Policy", "Terms of Service", "Contact Support", "Blog"].map((link, index) => (
                                 <li key={index}>
@@ -116,13 +117,13 @@ export default function Footer() {
                         <p>© {currentYear} LifeSync. All rights reserved.</p>
                         <div className="flex gap-6 mt-4 md:mt-0">
                             <Link href="#" className="hover:text-teal-400 transition-colors">
-                                Privacy
+                                {t("footer.privacy")}
                             </Link>
                             <Link href="#" className="hover:text-teal-400 transition-colors">
-                                Terms
+                                {t("footer.terms")}
                             </Link>
                             <Link href="#" className="hover:text-teal-400 transition-colors">
-                                Cookies
+                                {t("footer.cookie")}
                             </Link>
                         </div>
                     </div>

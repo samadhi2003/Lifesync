@@ -181,83 +181,103 @@ export default function DonorHome() {
                     const isAccepting = working === `accept:${request.id}`;
                     const isIgnoring = working === `ignore:${request.id}`;
                     return (
-                    <div key={request.id} className="group relative bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 p-7 shadow-2xl shadow-teal-900/[0.04] hover:shadow-teal-900/[0.1] transition-all duration-500 hover:-translate-y-2 flex flex-col">
+                    <div key={request.id} className="group relative bg-white/40 backdrop-blur-3xl rounded-[3rem] border border-white/60 p-8 shadow-[0_8px_32px_0_rgba(0,128,128,0.08)] hover:shadow-[0_20px_64px_0_rgba(0,128,128,0.15)] transition-all duration-700 hover:-translate-y-3 flex flex-col overflow-hidden">
+                        {/* Animated Background Glow */}
+                        <div className="absolute -top-24 -right-24 w-48 h-48 bg-teal-500/5 rounded-full blur-3xl group-hover:bg-teal-500/10 transition-colors duration-700"></div>
+
                         {/* Header Section */}
-                        <div className="flex justify-between items-start mb-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-50 to-white flex items-center justify-center text-[#008080] shadow-sm border border-teal-50 group-hover:scale-110 transition-transform duration-500">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
+                        <div className="flex justify-between items-start mb-8 relative z-10">
+                            <div className="flex items-center gap-5">
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-teal-400/20 rounded-2xl blur-md group-hover:blur-xl transition-all duration-700 opacity-0 group-hover:opacity-100"></div>
+                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-white to-teal-50/30 flex items-center justify-center text-[#008080] shadow-[0_4px_12px_rgba(0,128,128,0.08)] border border-white/80 relative z-10 group-hover:scale-110 transition-transform duration-700 ease-out">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    </div>
                                 </div>
                                 <div>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <h3 className="font-extrabold text-gray-900 text-lg leading-tight group-hover:text-[#008080] transition-colors">{request.patientName || "Patient"}</h3>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="font-black text-gray-900 text-xl tracking-tight group-hover:text-[#008080] transition-colors duration-300">{request.patientName || "Patient"}</h3>
                                     </div>
-                                    <div className="flex items-center gap-1.5 mt-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <div className="flex items-center gap-1.5 mt-1.5 opacity-60">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
-                                        <p className="text-gray-400 text-xs font-semibold">{request.patientLocation || "Location not provided"}</p>
+                                        <p className="text-gray-600 text-xs font-bold uppercase tracking-wider">{request.patientLocation || "Location not provided"}</p>
                                     </div>
                                 </div>
                             </div>
-                            <div className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border shadow-sm ${urgency === 'Critical' ? 'bg-red-50 text-red-600 border-red-100' :
-                                urgency === 'High' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                                    'bg-teal-50 text-teal-600 border-teal-100'
+                            <div className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-[0.1em] uppercase border shadow-sm backdrop-blur-md relative z-20 ${urgency === 'Critical' ? 'bg-red-50/80 text-red-600 border-red-100' :
+                                urgency === 'High' ? 'bg-orange-50/80 text-orange-600 border-orange-100' :
+                                    'bg-teal-50/80 text-teal-600 border-teal-100'
                                 }`}>
                                 {urgency}
                             </div>
                         </div>
 
-                        {/* Mid Section: Stats */}
-                        <div className="grid grid-cols-2 gap-4 mb-8">
-                            <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100/50">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Blood Type</span>
-                                <p className="text-[#008080] text-xl font-black">{request.patientBloodGroup || "—"}</p>
+                        {/* Info Grid */}
+                        <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
+                            <div className="bg-white/40 backdrop-blur-md rounded-[1.5rem] p-5 border border-white/60 hover:bg-white/60 transition-colors duration-500 shadow-sm">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] block mb-2">Blood Type</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></div>
+                                    <p className="text-gray-900 text-2xl font-black">{request.patientBloodGroup || "—"}</p>
+                                </div>
                             </div>
-                            <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100/50">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Match Level</span>
-                                <p className={`text-xl font-black ${score >= 80 ? 'text-teal-600' : 'text-orange-600'}`}>
+                            <div className="bg-white/40 backdrop-blur-md rounded-[1.5rem] p-5 border border-white/60 hover:bg-white/60 transition-colors duration-500 shadow-sm">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] block mb-2">Match Level</span>
+                                <p className={`text-2xl font-black ${score >= 80 ? 'text-teal-600' : 'text-orange-600'}`}>
                                     {score >= 80 ? 'Elite' : score >= 60 ? 'Strong' : 'Moderate'}
                                 </p>
                             </div>
                         </div>
 
-                        {/* Progress Section */}
-                        <div className="mb-10">
-                            <div className="flex justify-between items-end mb-3">
-                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Compatibility</p>
-                                <div className="flex items-baseline gap-0.5">
-                                    <span className="text-2xl font-black text-gray-900">{score}</span>
-                                    <span className="text-xs font-bold text-[#008080]">%</span>
+                        {/* Compatibility Meter */}
+                        <div className="mb-10 relative z-10">
+                            <div className="flex justify-between items-end mb-4">
+                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.25em]">Compatibility Score</p>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-3xl font-black text-gray-900 tracking-tighter">{score}</span>
+                                    <span className="text-sm font-black text-[#008080] opacity-50">%</span>
                                 </div>
                             </div>
-                            <div className="w-full bg-gray-100/80 rounded-full h-2.5 p-0.5 shadow-inner">
+                            <div className="w-full bg-gray-200/30 rounded-full h-3 p-1 backdrop-blur-sm shadow-inner overflow-hidden">
                                 <div
-                                    className={`h-full rounded-full shadow-lg transition-all duration-1000 ease-out relative overflow-hidden ${score >= 80 ? 'bg-gradient-to-r from-[#26A69A] to-[#4DB6AC]' : 'bg-gradient-to-r from-[#FFB74D] to-[#FFA726]'
-                                        }`}
+                                    className={`h-full rounded-full shadow-[0_0_12px_rgba(0,128,128,0.2)] transition-all duration-1000 ease-out relative ${
+                                        score >= 80 
+                                        ? 'bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600' 
+                                        : 'bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600'
+                                    }`}
                                     style={{ width: `${score}%` }}
                                 >
-                                    <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
+                                    <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.3)_50%,transparent_75%)] bg-[length:250%_250%] animate-[shimmer_3s_infinite]"></div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Footer Action */}
-                        <div className="mt-auto flex gap-3">
+                        <div className="mt-auto relative z-10 flex gap-3 pt-2">
                             <button
                                 disabled={isAccepting || isIgnoring}
                                 onClick={() => handleAccept(request.id)}
-                                className="flex-[2] bg-[#008080] hover:bg-[#006967] text-white font-black py-4 rounded-[1.25rem] transition-all duration-300 text-sm shadow-xl shadow-teal-900/10 hover:shadow-teal-900/30 active:scale-[0.98] border-b-4 border-teal-900/20 disabled:opacity-60"
+                                className="group/btn relative flex-[2] h-16 flex items-center justify-center rounded-[1.5rem] bg-[#008080] text-white font-black text-xs tracking-widest uppercase overflow-hidden transition-all duration-500 hover:shadow-[0_12px_32px_-8px_rgba(0,128,128,0.5)] hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] disabled:opacity-60"
                             >
-                                {isAccepting ? "Accepting…" : "Accept"}
+                                <div className="absolute inset-0 bg-gradient-to-r from-teal-400/0 via-white/10 to-teal-400/0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000 ease-in-out"></div>
+                                <span className="relative z-10 flex items-center gap-2">
+                                    {isAccepting ? "Accepting…" : "Accept Request"}
+                                    {!isAccepting && (
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transform group-hover/btn:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    )}
+                                </span>
                             </button>
                             <button
                                 disabled={isAccepting || isIgnoring}
                                 onClick={() => handleIgnore(request.id)}
-                                className="flex-1 bg-white hover:bg-gray-50 text-gray-400 hover:text-gray-600 font-bold py-4 rounded-[1.25rem] transition-all duration-300 text-xs active:scale-[0.98] border border-gray-100 disabled:opacity-60"
+                                className="flex-1 h-16 flex items-center justify-center rounded-[1.5rem] bg-white/50 text-gray-400 hover:text-gray-600 font-black text-[10px] tracking-widest uppercase border border-white/80 transition-all duration-300 hover:bg-white/80 active:scale-[0.98] disabled:opacity-60"
                             >
                                 {isIgnoring ? "…" : "Ignore"}
                             </button>

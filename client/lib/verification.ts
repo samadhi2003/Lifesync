@@ -92,32 +92,32 @@ export function statusTone(status: VerificationStatus): {
     switch (status) {
         case "verified":
             return { 
-                badge: "bg-white/10 text-white border-white/20", 
-                dot: "bg-teal-300", 
+                badge: "bg-teal-50 text-teal-700 border-teal-100", 
+                dot: "bg-teal-500", 
                 card: "bg-gradient-to-br from-[#008080] to-[#004D4D] text-white shadow-teal-900/20",
                 text: "text-white",
                 subtext: "text-teal-50/80"
             };
         case "pending":
             return { 
-                badge: "bg-white/10 text-white border-white/20", 
-                dot: "bg-amber-300", 
+                badge: "bg-amber-50 text-amber-700 border-amber-100", 
+                dot: "bg-amber-500", 
                 card: "bg-gradient-to-br from-amber-600 to-amber-800 text-white shadow-amber-900/20",
                 text: "text-white",
                 subtext: "text-amber-50/80"
             };
         case "rejected":
             return { 
-                badge: "bg-white/10 text-white border-white/20", 
-                dot: "bg-red-300", 
+                badge: "bg-red-50 text-red-700 border-red-100", 
+                dot: "bg-red-500", 
                 card: "bg-gradient-to-br from-red-600 to-red-800 text-white shadow-red-900/20",
                 text: "text-white",
                 subtext: "text-red-50/80"
             };
         default:
             return { 
-                badge: "bg-white/10 text-white border-white/20", 
-                dot: "bg-slate-300", 
+                badge: "bg-slate-50 text-slate-700 border-slate-100", 
+                dot: "bg-slate-500", 
                 card: "bg-gradient-to-br from-slate-600 to-slate-800 text-white shadow-slate-900/20",
                 text: "text-white",
                 subtext: "text-slate-50/80"

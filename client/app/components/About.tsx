@@ -1,7 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export default function About() {
+    const { t } = useLanguage();
+
     return (
         <section id="about" className="py-24 gradient-teal-soft relative overflow-hidden">
             {/* Decorative Blobs */}
@@ -41,23 +44,23 @@ export default function About() {
                 <div className="space-y-6">
                     <div>
                         <span className="text-teal-600 font-bold uppercase tracking-wider text-sm">
-                            About Us
+                            {t("nav.about")}
                         </span>
                         <h2 className="text-4xl font-bold text-slate-900 mt-3 mb-6">
-                            Bridging the Gap for Kidney Transplants
+                            {t("about.title")}
                         </h2>
                     </div>
 
                     <p className="text-slate-600 leading-relaxed text-lg font-medium">
-                        LifeSync is a secure and intelligent platform designed to connect kidney patients, donors, and doctors in one ethical and trusted space.
+                        {t("about.p1")}
                     </p>
 
                     <p className="text-slate-600 leading-relaxed">
-                        Using advanced web technology and AI-powered matching, we help users find compatible donors safely without the risks of social media or manual searching.
+                        {t("about.p2")}
                     </p>
 
                     <p className="text-slate-700 font-semibold leading-relaxed">
-                        Our mission is simple: make kidney donor matching faster, safer, and smarter.
+                        {t("about.p3")}
                     </p>
 
                     {/* Feature Pills */}

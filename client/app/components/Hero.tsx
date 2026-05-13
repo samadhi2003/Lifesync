@@ -5,8 +5,10 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { collection, getCountFromServer, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export default function Hero() {
+    const { t, language } = useLanguage();
     const [stats, setStats] = useState<{ patients: number | null; donors: number | null; doctors: number | null }>({
         patients: null,
         donors: null,
@@ -62,18 +64,23 @@ export default function Hero() {
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
-                            AI-Powered Matching Platform
+                            {t("hero.badge")}
                         </div>
 
-                        <h1 className="text-4xl lg:text-5xl xl:text-6xl font-extrabold text-slate-900 leading-[1.1]">
-                            <span className="text-teal-700">Connect</span>{" "}
-                            <span className="text-gray-400">Patients</span> with <br />
-                            Lifesaving <span className="bg-gradient-to-r from-teal-600 to-teal-400 bg-clip-text text-transparent">Donors</span>
+                        <h1 className={`text-4xl lg:text-5xl xl:text-6xl font-extrabold text-slate-900 leading-[1.1] ${language === 'si' || language === 'ta' ? 'leading-tight' : ''}`}>
+                            {language === 'en' ? (
+                                <>
+                                    <span className="text-teal-700">Connect</span>{" "}
+                                    <span className="text-gray-400">Patients</span> with <br />
+                                    Lifesaving <span className="bg-gradient-to-r from-teal-600 to-teal-400 bg-clip-text text-transparent">Donors</span>
+                                </>
+                            ) : (
+                                <span className="bg-gradient-to-r from-teal-700 to-teal-500 bg-clip-text text-transparent">{t("hero.title")}</span>
+                            )}
                         </h1>
 
                         <p className="text-lg text-slate-600 max-w-lg leading-relaxed">
-                            An ethical, transparent platform powered by AI-matching to connect
-                            kidney patients with compatible donors.
+                            {t("hero.subtitle")}
                         </p>
 
                         <div className="flex flex-wrap gap-4 pt-4">
@@ -81,7 +88,7 @@ export default function Hero() {
                                 href="/login/sign-in"
                                 className="group flex items-center gap-2 gradient-teal text-white px-6 py-4 rounded-2xl font-semibold transition-all duration-300 hover:shadow-xl hover:shadow-teal-300/50 hover:scale-105 elevation-2"
                             >
-                                Join as a Patient
+                                {t("hero.patientBtn")}
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
@@ -102,7 +109,7 @@ export default function Hero() {
                                 href="/login/sign-in"
                                 className="group flex items-center gap-2 glass-strong border-2 border-teal-200 text-teal-800 px-6 py-4 rounded-2xl font-semibold transition-all duration-300 hover:border-teal-300 hover:shadow-lg hover:scale-105"
                             >
-                                Join as a Donor
+                                {t("hero.donorBtn")}
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
@@ -120,10 +127,10 @@ export default function Hero() {
                             </Link>
 
                             <Link
-                                href="/login/sign-in"
+                                href="/#how-it-works"
                                 className="group flex items-center gap-2 glass-strong border-2 border-teal-200 text-teal-800 px-6 py-4 rounded-2xl font-semibold transition-all duration-300 hover:border-teal-300 hover:shadow-lg hover:scale-105"
                             >
-                                Join as a Doctor
+                                {t("hero.howItWorksBtn")}
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"

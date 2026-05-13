@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   description: "An ethical, transparent platform powered by AI-matching to connect kidney patients with compatible donors.",
 };
 
+import { LanguageProvider } from "@/lib/i18n/LanguageContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -31,7 +33,9 @@ export default function RootLayout({
         style={{ fontFamily: 'var(--font-inter), system-ui, sans-serif' }}
         suppressHydrationWarning
       >
-        {children}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

@@ -19,13 +19,11 @@ export default function VerifiedBadge({
 
     return (
         <span
-            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${tone.badge}`}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${tone.badge}`}
             title={statusLabel(status)}
         >
-            <svg xmlns="http://www.w3.org/2000/svg" className={iconClass} viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2l2.39 4.84L20 7.72l-4 3.9.94 5.48L12 14.77 7.06 17.1 8 11.62l-4-3.9 5.61-.88L12 2z" />
-            </svg>
-            {showLabel ? "Verified" : ""}
+            <span className={`w-1 h-1 rounded-full ${tone.dot}`}></span>
+            {showLabel ? "Verified" : "Verified"}
         </span>
     );
 }

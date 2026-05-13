@@ -1,10 +1,13 @@
 import Image from "next/image";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export default function Audience() {
+    const { t } = useLanguage();
+
     const audiences = [
         {
-            title: "Patient",
-            subtitle: "Seeking a donor",
+            title: t("audience.patientTitle"),
+            subtitle: t("audience.patientSubtitle"),
             image: "/patient.png",
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -12,29 +15,29 @@ export default function Audience() {
                     <circle cx="12" cy="12" r="9" strokeOpacity="0.1" />
                 </svg>
             ),
-            description: "Find compatible donors safely and privately"
+            description: t("audience.patientDesc")
         },
         {
-            title: "Donors",
-            subtitle: "Offering to help",
+            title: t("audience.donorTitle"),
+            subtitle: t("audience.donorSubtitle"),
             image: "/donor.png",
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke="currentColor" fill="rgba(255,255,255,0.2)" />
                 </svg>
             ),
-            description: "Help save lives with ethical and secure communication"
+            description: t("audience.donorDesc")
         },
         {
-            title: "Doctors",
-            subtitle: "Medical staff",
+            title: t("audience.doctorTitle"),
+            subtitle: t("audience.doctorSubtitle"),
             image: "/doctor.png",
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" stroke="currentColor" fill="rgba(255,255,255,0.2)" />
                 </svg>
             ),
-            description: "Review medical details and guide accurate transplant matching"
+            description: t("audience.doctorDesc")
         }
     ];
 
@@ -47,9 +50,9 @@ export default function Audience() {
             <div className="container mx-auto px-6 relative z-10">
                 <div className="text-center mb-16">
                     <span className="text-teal-600 font-bold uppercase tracking-wider text-sm">Who We Serve</span>
-                    <h2 className="text-4xl font-bold text-slate-900 mt-2 mb-4">How We Serve</h2>
+                    <h2 className="text-4xl font-bold text-slate-900 mt-2 mb-4">{t("audience.title")}</h2>
                     <p className="text-slate-600 max-w-2xl mx-auto">
-                        Together, we make the kidney matching journey easier and safer for everyone involved
+                        {t("audience.subtitle")}
                     </p>
                 </div>
 

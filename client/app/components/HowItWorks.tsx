@@ -1,9 +1,13 @@
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+
 export default function HowItWorks() {
+    const { t } = useLanguage();
+
     const steps = [
         {
             number: "01",
-            title: "Create Your Profile",
-            description: "Sign up as a patient, donor, or medical professional. Complete your profile with necessary medical information.",
+            title: t("howItWorks.step1Title"),
+            description: t("howItWorks.step1Desc"),
             icon: (
                 <div className="relative">
                     <div className="absolute inset-0 bg-teal-200/50 blur-xl rounded-full scale-150 animate-pulse-slow"></div>
@@ -15,8 +19,8 @@ export default function HowItWorks() {
         },
         {
             number: "02",
-            title: "AI Matching Process",
-            description: "Our advanced AI algorithm analyzes compatibility factors to find the best matches based on medical criteria.",
+            title: t("howItWorks.step2Title"),
+            description: t("howItWorks.step2Desc"),
             icon: (
                 <div className="relative">
                     <div className="absolute inset-0 bg-teal-200/50 blur-xl rounded-full scale-150 animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
@@ -28,8 +32,8 @@ export default function HowItWorks() {
         },
         {
             number: "03",
-            title: "Connect & Coordinate",
-            description: "Patients can securely view top-match donors and send requests, while donors manage incoming patient requests efficiently.",
+            title: t("howItWorks.step3Title"),
+            description: t("howItWorks.step3Desc"),
             icon: (
                 <div className="relative">
                     <div className="absolute inset-0 bg-teal-200/50 blur-xl rounded-full scale-150 animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
@@ -41,8 +45,8 @@ export default function HowItWorks() {
         },
         {
             number: "04",
-            title: "Save Lives",
-            description: "With medical guidance and secure coordination, matches progress safely, saving lives through ethical kidney transplantation.",
+            title: t("howItWorks.step4Title"),
+            description: t("howItWorks.step4Desc"),
             icon: (
                 <div className="relative">
                     <div className="absolute inset-0 bg-teal-200/50 blur-xl rounded-full scale-150 animate-pulse-slow" style={{ animationDelay: '3s' }}></div>
@@ -62,9 +66,9 @@ export default function HowItWorks() {
             <div className="container mx-auto px-6 relative z-10">
                 <div className="text-center mb-16">
                     <span className="text-teal-600 font-bold uppercase tracking-wider text-sm">Process</span>
-                    <h2 className="text-4xl font-bold text-slate-900 mt-2 mb-4">How It Works</h2>
+                    <h2 className="text-4xl font-bold text-slate-900 mt-2 mb-4">{t("howItWorks.title")}</h2>
                     <p className="text-slate-600 max-w-2xl mx-auto">
-                        Connecting patients and donors with the best possible kidney matches.
+                        {t("howItWorks.subtitle")}
                     </p>
                 </div>
 
