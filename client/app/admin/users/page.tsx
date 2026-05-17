@@ -38,7 +38,7 @@ function UsersPageInner() {
             try {
                 const snap = await getDocs(collection(db, "users"));
                 if (cancelled) return;
-                const rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+                const rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) }));
                 setUsers(rows);
             } catch (err) {
                 console.error("Load users failed:", err);

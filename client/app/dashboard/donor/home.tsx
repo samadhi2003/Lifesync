@@ -151,7 +151,7 @@ export default function DonorHome() {
                         {["All", "High", "Medium", "Low"].map((filter) => (
                             <button
                                 key={filter}
-                                onClick={() => setSelectedFilter(filter as any)}
+                                onClick={() => setSelectedFilter(filter as Record<string, unknown>)}
                                 className={`px-8 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${selectedFilter === filter
                                     ? "bg-[#008080] text-white shadow-lg shadow-teal-900/20 scale-105"
                                     : "text-gray-500 hover:text-[#008080] hover:bg-white"

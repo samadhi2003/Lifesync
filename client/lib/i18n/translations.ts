@@ -14,7 +14,7 @@ export const translations = {
             subtitle: "An ethical, transparent platform powered by AI-matching to connect kidney patients with compatible donors.",
             patientBtn: "Join as a Patient",
             donorBtn: "Join as a Donor",
-            howItWorksBtn: "Join as a Doctor"
+            doctorBtn: "Join as a Doctor"
         },
         features: {
             title: "Why LifeSync?",
@@ -79,7 +79,7 @@ export const translations = {
             subtitle: "වකුගඩු රෝගීන් ගැළපෙන පරිත්‍යාගශීලීන් සමඟ සම්බන්ධ කිරීම සඳහා AI-ගැළපීම මගින් බල ගැන්වෙන සදාචාරාත්මක, විනිවිද පෙනෙන වේදිකාවක්.",
             patientBtn: "රෝගියෙකු ලෙස ලියාපදිංචි වන්න",
             donorBtn: "පරිත්‍යාගශීලියෙකු ලෙස ලියාපදිංචි වන්න",
-            howItWorksBtn: "වෛද්‍යවරයෙකු ලෙස ලියාපදිංචි වන්න"
+            doctorBtn: "වෛද්‍යවරයෙකු ලෙස ලියාපදිංචි වන්න"
         },
         features: {
             title: "LifeSync තෝරාගන්නේ ඇයි?",
@@ -144,7 +144,7 @@ export const translations = {
             subtitle: "சிறுநீரக நோயாளிகளை பொருத்தமான நன்கொடையாளர்களுடன் இணைக்க AI-பொருத்தம் மூலம் இயங்கும் நெறிமுறை, வெளிப்படையான தளம்.",
             patientBtn: "நோயாளியாக இணையுங்கள்",
             donorBtn: "நன்கொடையாளராக இணையுங்கள்",
-            howItWorksBtn: "மருத்துவராக இணையுங்கள்"
+            doctorBtn: "மருத்துவராக இணையுங்கள்"
         },
         features: {
             title: "ஏன் LifeSync?",

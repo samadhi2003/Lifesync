@@ -12,7 +12,6 @@
 
 import {
     doc,
-    serverTimestamp,
     updateDoc,
     FieldValue,
 } from "firebase/firestore";

@@ -29,9 +29,9 @@ export default function AdminGuard({ children, onReady }: { children: React.Reac
 
             try {
                 const snap = await getDoc(doc(db, "users", user.uid));
-                const role = snap.exists() ? (snap.data() as any).role : null;
+                const role = snap.exists() ? (snap.data() as Record<string, unknown>).role : null;
                 if (role === "admin") {
-                    const data = snap.data() as any;
+                    const data = snap.data() as Record<string, unknown>;
                     onReady?.({
                         uid: user.uid,
                         fullName: data.fullName || user.displayName || "Administrator",

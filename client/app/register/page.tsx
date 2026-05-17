@@ -2,19 +2,14 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 function RegisterContent() {
     const searchParams = useSearchParams();
-    const [selectedRole, setSelectedRole] = useState<string | null>(null);
-
-    useEffect(() => {
-        const role = searchParams.get("role");
-        if (role && ["patient", "donor", "doctor"].includes(role)) {
-            setSelectedRole(role);
-        }
-    }, [searchParams]);
+    const roleParam = searchParams.get("role");
+    const initialRole = roleParam && ["patient", "donor", "doctor"].includes(roleParam) ? roleParam : null;
+    const [selectedRole, setSelectedRole] = useState<string | null>(initialRole);
 
     const roles = [
         {

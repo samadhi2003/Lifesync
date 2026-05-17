@@ -57,7 +57,7 @@ export default function SignInPage() {
             let destination = "/dashboard/patient";
             try {
                 const snap = await getDoc(doc(db, "users", cred.user.uid));
-                const role = snap.exists() ? (snap.data() as any).role : null;
+                const role = snap.exists() ? (snap.data() as Record<string, string>).role : null;
                 if (role && ROLE_ROUTES[role]) {
                     destination = ROLE_ROUTES[role];
                 }
@@ -65,7 +65,7 @@ export default function SignInPage() {
                 console.error("Role lookup failed, falling back to patient dashboard:", lookupErr);
             }
             router.push(destination);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Login error:", err);
             setError("Failed to login. Please check your credentials.");
         } finally {
@@ -149,7 +149,7 @@ export default function SignInPage() {
 
                 {/* Footer */}
                 <div className="mt-8 text-center text-sm text-gray-400">
-                    Don't have an account?{" "}
+                    Don&apos;t have an account?{" "}
                     <Link href="/register" className="text-[#008080] font-bold hover:underline decoration-1 underline-offset-4">
                         Signup
                     </Link>

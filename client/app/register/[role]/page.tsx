@@ -216,7 +216,7 @@ export default function RegisterStep1() {
             const user = userCredential.user;
 
             // Prepare data to save
-            const userData: any = {
+            const userData: Record<string, unknown> = {
                 uid: user.uid,
                 email: email,
                 role: roleRaw, // 'patient', 'donor', or 'doctor'
@@ -274,9 +274,9 @@ export default function RegisterStep1() {
                 router.push("/dashboard/patient");
             }
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Registration error:", err);
-            setError(err.message || "Failed to register");
+            setError(err instanceof Error ? err.message : "Failed to register");
         } finally {
             setLoading(false);
         }
@@ -288,7 +288,7 @@ export default function RegisterStep1() {
                 <div className="max-w-md w-full bg-white rounded-3xl border border-white/50 shadow-xl p-10 text-center">
                     <h1 className="text-2xl font-black text-gray-900 mb-3">Registration not available</h1>
                     <p className="text-gray-500 mb-8 text-sm">
-                        Accounts for the <span className="font-bold text-[#008080]">{role}</span> role can't be self-registered. Admin accounts are created by existing administrators from the Users page.
+                        Accounts for the <span className="font-bold text-[#008080]">{role}</span> role can&apos;t be self-registered. Admin accounts are created by existing administrators from the Users page.
                     </p>
                     <div className="flex gap-3">
                         <button onClick={() => router.push("/register")} className="flex-1 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl transition-all hover:bg-slate-200">
@@ -753,8 +753,16 @@ export default function RegisterStep1() {
                     )}
 
                     <div className={`pt-6 ${step > 1 ? 'flex gap-4' : ''}`}>
-
-
+                        {step > 1 && (
+                            <button
+                                type="button"
+                                onClick={handleBack}
+                                disabled={loading}
+                                className="w-full bg-white text-gray-500 font-bold py-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50"
+                            >
+                                Back
+                            </button>
+                        )}
 
                         <button
                             type="button"

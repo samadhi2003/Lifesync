@@ -42,8 +42,8 @@ export default function MatchesPage() {
 
                 const donorsSnapshot = await getDocs(collection(db, "users"));
                 const fetched = donorsSnapshot.docs
-                    .map((d) => ({ id: d.id, ...(d.data() as any) }))
-                    .filter((u: any) => u.role === "donor" && isVerified(u));
+                    .map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) }))
+                    .filter((u: unknown) => u.role === "donor" && isVerified(u));
 
                 setVerifiedDonors(fetched);
             } catch (err) {
@@ -161,7 +161,7 @@ export default function MatchesPage() {
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <h3 className="font-black text-gray-900 text-xl tracking-tight group-hover:text-[#00796B] transition-colors duration-300">{donor.fullName || "Donor"}</h3>
-                                            <VerifiedBadge user={donor as any} />
+                                            <VerifiedBadge user={donor as Record<string, unknown>} />
                                         </div>
                                         <div className="flex items-center gap-1.5 mt-1.5 opacity-60">
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

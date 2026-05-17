@@ -21,7 +21,7 @@ type EditDraft = {
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const URGENCY_LEVELS = ["Low", "Medium", "High", "Critical"];
 
-function buildDraft(patient: any): EditDraft {
+function buildDraft(patient: unknown): EditDraft {
     const hla: HlaTyping = {};
     const source = (patient?.hla as HlaTyping | undefined) || {};
     for (const locus of LOCI) {
@@ -174,7 +174,7 @@ export default function Patients() {
             try {
                 const snap = await getDoc(doc(db, "users", selectedPatient.doctorId));
                 if (cancelled) return;
-                const data = snap.exists() ? (snap.data() as any) : null;
+                const data = snap.exists() ? (snap.data() as Record<string, unknown>) : null;
                 setPrimaryPhysician(data?.fullName || data?.email || "");
             } catch (err) {
                 console.error("Failed to load primary physician:", err);
@@ -200,10 +200,10 @@ export default function Patients() {
                     query(collection(db, "users"), where("role", "==", "donor")),
                 );
                 const donors = donorsSnap.docs
-                    .map((d) => ({ id: d.id, ...(d.data() as any) }))
+                    .map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) }))
                     // Only verified donors should be suggested for patient matching.
-                    .filter((d: any) => isVerified(d))
-                    .map((d: any): SuggestedDonor => ({
+                    .filter((d: unknown) => isVerified(d))
+                    .map((d: unknown): SuggestedDonor => ({
                         id: d.id,
                         name: d.fullName || "Unnamed Donor",
                         bloodGroup: d.bloodGroup || "—",
@@ -277,7 +277,7 @@ export default function Patients() {
             }));
 
             // Client-side filter for fuzzy search simulation
-            const filtered = fetchedPatients.filter((p: any) =>
+            const filtered = fetchedPatients.filter((p: unknown) =>
                 p.name.toLowerCase().includes(searchTerm.toLowerCase())
             );
 

@@ -45,7 +45,7 @@ export default function AdminOverview() {
         (async () => {
             try {
                 const usersSnap = await getDocs(collection(db, "users"));
-                const users = usersSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+                const users = usersSnap.docs.map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) }));
 
                 const byRole = (role: string) => users.filter((u) => u.role === role);
 

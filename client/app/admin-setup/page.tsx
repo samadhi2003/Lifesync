@@ -35,10 +35,10 @@ export default function AdminSetupPage() {
             setError(null);
             try {
                 const existing = await getDocs(
-                    query(collection(db, "users"), where("role", "==", "admin"), limit(1)),
+                    query(collection(db, "users"), where("role", "==", "admin"), limit(1))
                 );
                 if (!existing.empty) {
-                    const data = existing.docs[0].data() as any;
+                    const data = existing.docs[0].data() as Record<string, string>;
                     setState({ kind: "sealed", adminName: data.fullName || data.email });
                     return;
                 }
@@ -49,7 +49,7 @@ export default function AdminSetupPage() {
                 }
 
                 const mySnap = await getDoc(doc(db, "users", user.uid));
-                const myData = mySnap.exists() ? (mySnap.data() as any) : {};
+                const myData = mySnap.exists() ? (mySnap.data() as Record<string, string>) : {};
                 setState({
                     kind: "ready",
                     uid: user.uid,
@@ -149,7 +149,7 @@ export default function AdminSetupPage() {
                     <div className="space-y-6">
                         <div className="p-5 rounded-2xl bg-teal-50 border border-teal-100 text-teal-800 text-sm">
                             No admin exists yet. Sign in with the account you want to promote, then come back to this page.
-                            Don't have an account? <Link href="/register" className="font-bold underline">Register first</Link>.
+                            Don&apos;t have an account? <Link href="/register" className="font-bold underline">Register first</Link>.
                         </div>
                         <Link
                             href="/login/sign-in?redirect=/admin-setup"
@@ -185,7 +185,7 @@ export default function AdminSetupPage() {
 
                 {state.kind === "promoted" && (
                     <div className="p-6 rounded-2xl bg-teal-50 border border-teal-100 text-teal-800">
-                        <p className="font-bold mb-1">You're now an administrator.</p>
+                        <p className="font-bold mb-1">You&apos;re now an administrator.</p>
                         <p className="text-sm">Redirecting to the admin console…</p>
                     </div>
                 )}

@@ -127,10 +127,10 @@ export default function Hero() {
                             </Link>
 
                             <Link
-                                href="/#how-it-works"
+                                href="/login/sign-in"
                                 className="group flex items-center gap-2 glass-strong border-2 border-teal-200 text-teal-800 px-6 py-4 rounded-2xl font-semibold transition-all duration-300 hover:border-teal-300 hover:shadow-lg hover:scale-105"
                             >
-                                {t("hero.howItWorksBtn")}
+                                {t("hero.doctorBtn")}
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"

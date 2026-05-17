@@ -22,7 +22,7 @@ const LOCUS_HINTS: Record<Locus, [string, string]> = {
 
 export default function FindDonors() {
     const [isSearching, setIsSearching] = useState(false);
-    const [matches, setMatches] = useState<any[]>([]);
+    const [matches, setMatches] = useState<Record<string, unknown>[]>([]);
     const [uploading, setUploading] = useState(false);
     const [hlaUrl, setHlaUrl] = useState<string | null>(null);
     const [hlaReportFile, setHlaReportFile] = useState<File | null>(null);
@@ -122,7 +122,7 @@ export default function FindDonors() {
             let donors = querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
-            })) as any[];
+            })) as Record<string, unknown>[];
 
             // Only verified donors should be surfaced to doctors during matching.
             donors = donors.filter((d) => isVerified(d));
@@ -251,7 +251,7 @@ export default function FindDonors() {
                             <div>
                                 <label className="block text-gray-500 text-xs font-semibold ml-1">HLA Typing <span className="text-gray-300 font-normal">(optional, can be added later)</span></label>
                                 <p className="text-[10px] text-gray-400 ml-1 mt-1 leading-relaxed">
-                                    Transcribe each locus from the patient's Histocompatibility report. Enter both alleles per row using the broad serological number (e.g. <span className="font-mono">31</span>, <span className="font-mono">35</span>). Null alleles can be written as <span className="font-mono">DRB4*01(N)</span>.
+                                    Transcribe each locus from the patient&apos;s Histocompatibility report. Enter both alleles per row using the broad serological number (e.g. <span className="font-mono">31</span>, <span className="font-mono">35</span>). Null alleles can be written as <span className="font-mono">DRB4*01(N)</span>.
                                 </p>
                             </div>
                             <div className="overflow-x-auto bg-[#F5F5F5] rounded-lg p-3">
@@ -404,7 +404,7 @@ export default function FindDonors() {
                                             <div>
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <h4 className="font-extrabold text-gray-900">{donor.fullName || "Unknown Donor"}</h4>
-                                                    <VerifiedBadge user={donor as any} />
+                                                    <VerifiedBadge user={donor as Record<string, unknown>} />
                                                 </div>
                                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Blood Group: {donor.bloodGroup || "N/A"}</p>
                                                 {donor.address && <p className="text-[10px] text-gray-400 font-medium mt-1">{donor.address}</p>}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { auth, db, storage } from "@/lib/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -149,7 +150,7 @@ export default function PatientProfile() {
             await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(storageRef);
 
-            const updateData: any = {};
+            const updateData: Record<string, string> = {};
             if (type === 'hla') updateData.hlaReportURL = downloadURL;
             else updateData.medicalReportURL = downloadURL;
 
@@ -194,7 +195,7 @@ export default function PatientProfile() {
                     <div className="relative group">
                         <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2rem] bg-gradient-to-br from-[#48D597] to-[#2E807D] p-1 shadow-2xl overflow-hidden group-hover:scale-105 transition-transform duration-500">
                             {profile.photoURL ? (
-                                <img src={profile.photoURL} alt="Profile" className="w-full h-full object-cover rounded-[1.8rem]" />
+                                <Image src={profile.photoURL} alt="Profile" fill className="object-cover rounded-[1.8rem]" />
                             ) : (
                                 <div className="w-full h-full rounded-[1.8rem] bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-4xl font-black border border-white/30">
                                     {profile.name.substring(0, 2).toUpperCase()}
@@ -423,7 +424,7 @@ export default function PatientProfile() {
                                  )}
                                  {profile.verificationNotes && status === "rejected" && (
                                      <div className="bg-white/10 border border-white/20 rounded-2xl p-4 text-xs text-white mb-4">
-                                         <p className="font-bold mb-1">Doctor's note</p>
+                                         <p className="font-bold mb-1">Doctor&apos;s note</p>
                                          {profile.verificationNotes}
                                      </div>
                                  )}
