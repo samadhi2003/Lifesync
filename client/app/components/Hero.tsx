@@ -46,218 +46,199 @@ export default function Hero() {
 
     return (
         <>
-            <section className="relative pt-20 pb-24 lg:pt-24 lg:pb-32 overflow-hidden">
-                {/* Animated Gradient Background */}
-                <div className="absolute inset-0 gradient-mesh"></div>
+            <section className="relative pt-24 pb-28 lg:pt-32 lg:pb-36 overflow-hidden bg-slate-50/50">
+                {/* Modern Mesh and Grid background */}
+                <div className="absolute inset-0 gradient-mesh opacity-70 z-0"></div>
+                <div className="absolute inset-0 pattern-grid opacity-[0.03] dark:opacity-[0.05] pointer-events-none z-0"></div>
 
-                {/* Floating Blobs */}
-                <div className="absolute top-20 left-10 w-72 h-72 bg-teal-300 blob animate-pulse-slow"></div>
-                <div className="absolute bottom-20 right-10 w-96 h-96 bg-teal-200 blob animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
+                {/* Floating ambient glowing blobs */}
+                <div className="absolute top-10 left-[-10%] w-[350px] h-[350px] bg-teal-300/20 rounded-full blur-[100px] animate-pulse-slow z-0"></div>
+                <div className="absolute bottom-10 right-[-10%] w-[450px] h-[450px] bg-teal-400/15 rounded-full blur-[120px] animate-pulse-slow z-0" style={{ animationDelay: '2s' }}></div>
 
-                <div className="container mx-auto px-6 md:px-12 grid lg:grid-cols-2 gap-12 items-center relative z-10">
-                    <div className="space-y-8 animate-fade-in-up">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-teal text-teal-700 text-sm font-semibold">
+                {/* Full Hero Background Image (Right side doctor kidneys, fading to left) */}
+                <div className="absolute inset-y-0 right-0 w-full lg:w-1/2 z-10 pointer-events-none select-none">
+                    <div className="relative w-full h-full">
+                        <Image
+                            src="/doctor-kidneys.png"
+                            alt="LifeSync Doctor and Kidney Matching Background"
+                            fill
+                            className="object-cover object-right-top opacity-[0.25] lg:opacity-95 transition-opacity duration-500"
+                            priority
+                        />
+                        {/* Gradient mask to blend the image into the background from left to right */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-slate-50 via-slate-50/90 to-transparent lg:from-slate-50 lg:via-slate-50/20 lg:to-transparent z-20"></div>
+                        {/* Bottom mask to blend the image into the stepper timeline */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-50 via-transparent to-transparent z-20"></div>
+                    </div>
+                </div>
+
+                <div className="container mx-auto px-6 md:px-12 grid lg:grid-cols-12 gap-12 lg:gap-8 items-center relative z-20">
+                    
+                    {/* Left Column (Content & Actions) - Span 7 */}
+                    <div className="lg:col-span-7 space-y-8 animate-fade-in-up">
+                        {/* Pill Badge */}
+                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-800 text-sm font-semibold shadow-sm backdrop-blur-md">
                             <span className="relative flex h-2 w-2">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
                             </span>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                            {t("hero.badge")}
+                            <span className="tracking-wide text-xs uppercase text-teal-700 font-bold">{t("hero.badge")}</span>
                         </div>
 
-                        <h1 className={`text-4xl lg:text-5xl xl:text-6xl font-extrabold text-slate-900 leading-[1.1] ${language === 'si' || language === 'ta' ? 'leading-tight' : ''}`}>
+                        {/* Heading */}
+                        <h1 className={`text-4xl sm:text-5xl xl:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.1] ${language === 'si' || language === 'ta' ? 'leading-tight' : ''}`}>
                             {language === 'en' ? (
                                 <>
-                                    <span className="text-teal-700">Connect</span>{" "}
-                                    <span className="text-gray-400">Patients</span> with <br />
-                                    Lifesaving <span className="bg-gradient-to-r from-teal-600 to-teal-400 bg-clip-text text-transparent">Donors</span>
+                                    <span className="text-teal-700 font-black">Connect</span>{" "}
+                                    <span className="text-slate-500 font-light">Patients</span> with <br />
+                                    Lifesaving <span className="bg-gradient-to-r from-teal-600 to-teal-500 bg-clip-text text-transparent font-black relative">
+                                        Donors
+                                        <span className="absolute bottom-1 left-0 w-full h-[4px] bg-teal-200/40 -z-10 rounded"></span>
+                                    </span>
                                 </>
                             ) : (
                                 <span className="bg-gradient-to-r from-teal-700 to-teal-500 bg-clip-text text-transparent">{t("hero.title")}</span>
                             )}
                         </h1>
 
-                        <p className="text-lg text-slate-600 max-w-lg leading-relaxed">
+                        <p className="text-lg text-slate-600 max-w-xl leading-relaxed font-medium">
                             {t("hero.subtitle")}
                         </p>
 
-                        <div className="flex flex-wrap gap-4 pt-4">
+                        {/* Interactive Role Buttons as modern selector cards */}
+                        <div className="grid sm:grid-cols-3 gap-4 pt-2">
+                            {/* Patient Link */}
                             <Link
                                 href="/login/sign-in"
-                                className="group flex items-center gap-2 gradient-teal text-white px-6 py-4 rounded-2xl font-semibold transition-all duration-300 hover:shadow-xl hover:shadow-teal-300/50 hover:scale-105 elevation-2"
+                                className="group relative flex flex-col justify-between p-5 rounded-2xl bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-md hover:shadow-xl hover:shadow-teal-500/20 transition-all duration-300 hover:-translate-y-1 overflow-hidden"
                             >
-                                {t("hero.patientBtn")}
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M9 5l7 7-7 7"
-                                    />
-                                </svg>
+                                <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-white/10 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    </div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-teal-200 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-teal-100 font-bold tracking-wider uppercase mb-1">Seek Match</p>
+                                    <h3 className="font-bold text-base leading-tight">{t("hero.patientBtn")}</h3>
+                                </div>
                             </Link>
 
+                            {/* Donor Link */}
                             <Link
                                 href="/login/sign-in"
-                                className="group flex items-center gap-2 glass-strong border-2 border-teal-200 text-teal-800 px-6 py-4 rounded-2xl font-semibold transition-all duration-300 hover:border-teal-300 hover:shadow-lg hover:scale-105"
+                                className="group relative flex flex-col justify-between p-5 rounded-2xl bg-white border border-teal-100 shadow-sm hover:shadow-md hover:border-teal-200 transition-all duration-300 hover:-translate-y-1 overflow-hidden"
                             >
-                                {t("hero.donorBtn")}
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M9 5l7 7-7 7"
-                                    />
-                                </svg>
+                                <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-teal-50 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                        </svg>
+                                    </div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400 group-hover:text-teal-600 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-teal-600 font-bold tracking-wider uppercase mb-1">Give Life</p>
+                                    <h3 className="font-bold text-base text-slate-800 leading-tight">{t("hero.donorBtn")}</h3>
+                                </div>
                             </Link>
 
+                            {/* Doctor Link */}
                             <Link
                                 href="/login/sign-in"
-                                className="group flex items-center gap-2 glass-strong border-2 border-teal-200 text-teal-800 px-6 py-4 rounded-2xl font-semibold transition-all duration-300 hover:border-teal-300 hover:shadow-lg hover:scale-105"
+                                className="group relative flex flex-col justify-between p-5 rounded-2xl bg-white border border-teal-100 shadow-sm hover:shadow-md hover:border-teal-200 transition-all duration-300 hover:-translate-y-1 overflow-hidden"
                             >
-                                {t("hero.doctorBtn")}
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M9 5l7 7-7 7"
-                                    />
-                                </svg>
+                                <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-teal-50 rounded-full blur-xl group-hover:scale-150 transition-transform duration-500"></div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                        </svg>
+                                    </div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400 group-hover:text-teal-600 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-teal-600 font-bold tracking-wider uppercase mb-1">Verify matches</p>
+                                    <h3 className="font-bold text-base text-slate-800 leading-tight">{t("hero.doctorBtn")}</h3>
+                                </div>
                             </Link>
                         </div>
 
-                        {/* Stats Cards */}
-                        <div className="grid grid-cols-3 gap-4 pt-8">
-                            <div className="glass p-4 rounded-3xl text-center hover-lift flex flex-col items-center">
-                                <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center mb-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                    </svg>
-                                </div>
-                                <div className="text-2xl font-bold text-teal-700">{format(stats.patients)}</div>
-                                <div className="text-[10px] uppercase tracking-wider font-bold text-slate-500 mt-1">Patients</div>
-                            </div>
-                            <div className="glass p-4 rounded-3xl text-center hover-lift flex flex-col items-center">
-                                <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center mb-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                                <div className="text-2xl font-bold text-teal-700">{format(stats.donors)}</div>
-                                <div className="text-[10px] uppercase tracking-wider font-bold text-slate-500 mt-1">Donors</div>
-                            </div>
-                            <div className="glass p-4 rounded-3xl text-center hover-lift flex flex-col items-center">
-                                <div className="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center mb-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                                    </svg>
-                                </div>
-                                <div className="text-2xl font-bold text-teal-700">{format(stats.doctors)}</div>
-                                <div className="text-[10px] uppercase tracking-wider font-bold text-slate-500 mt-1">Doctors</div>
-                            </div>
-                        </div>
                     </div>
 
-                    <div className="relative z-10 flex justify-center lg:justify-end">
-                        {/* Hero Image with Float Animation */}
-                        <div className="relative w-full max-w-lg aspect-[4/3] lg:aspect-auto lg:h-[600px] animate-float">
-                            <Image
-                                src="/hero.png"
-                                alt="LifeSync Doctors and Patients"
-                                fill
-                                className="object-contain object-bottom drop-shadow-2xl"
-                                priority
-                            />
-                        </div>
-                    </div>
+                    {/* Right Column (Placeholder to maintain balanced grid layout) - Span 5 */}
+                    <div className="lg:col-span-5 hidden lg:block h-[450px] pointer-events-none"></div>
                 </div>
             </section>
 
-            {/* Divider / Info Strip with Glassmorphism */}
-            <div className="relative w-full gradient-teal py-20 overflow-hidden">
+            {/* Bottom green section containing stats */}
+            <div className="relative w-full gradient-teal py-12 md:py-16 overflow-hidden">
                 <div className="absolute inset-0 pattern-dots opacity-20"></div>
 
-                <div className="container mx-auto px-6 flex flex-col md:flex-row justify-center gap-8 md:gap-16 items-center relative z-10">
-                    <div className="p-6 rounded-2xl hover-scale transition-all duration-300">
+                <div className="container mx-auto px-6 max-w-5xl relative z-10">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4 text-center">
+                        
+                        {/* Patients Stat */}
+                        <div className="flex flex-col items-center text-white px-4">
+                            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mb-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                            {stats.patients === null ? (
+                                <div className="h-10 w-20 bg-white/10 rounded animate-pulse my-1"></div>
+                            ) : (
+                                <div className="text-4xl sm:text-5xl font-black text-white tracking-tight">{format(stats.patients)}</div>
+                            )}
+                            <div className="text-xs sm:text-sm uppercase tracking-widest font-extrabold text-teal-100 mt-2">{t("audience.patientTitle")}</div>
+                        </div>
 
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-12 w-12 text-white mx-auto"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={1.5}
-                                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                            />
-                        </svg>
-                        <div className="text-white font-bold mt-3 text-center">Patients</div>
-                    </div>
+                        {/* Donors Stat */}
+                        <div className="flex flex-col items-center text-white px-4 relative">
+                            {/* Visual vertical dividers for desktop */}
+                            <div className="hidden md:block absolute -left-2 top-4 bottom-4 w-[1px] bg-white/20"></div>
+                            
+                            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mb-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                            </div>
+                            {stats.donors === null ? (
+                                <div className="h-10 w-20 bg-white/10 rounded animate-pulse my-1"></div>
+                            ) : (
+                                <div className="text-4xl sm:text-5xl font-black text-white tracking-tight">{format(stats.donors)}</div>
+                            )}
+                            <div className="text-xs sm:text-sm uppercase tracking-widest font-extrabold text-teal-100 mt-2">{t("audience.donorTitle")}</div>
+                        </div>
 
-                    <div className="text-white text-3xl font-light opacity-90">+</div>
-                    <div className="p-6 rounded-2xl hover-scale transition-all duration-300">
+                        {/* Doctors Stat */}
+                        <div className="flex flex-col items-center text-white px-4 relative">
+                            {/* Visual vertical dividers for desktop */}
+                            <div className="hidden md:block absolute -left-2 top-4 bottom-4 w-[1px] bg-white/20"></div>
 
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-12 w-12 text-white mx-auto"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={1.5}
-                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                            />
-                        </svg>
-                        <div className="text-white font-bold mt-3 text-center">Donors</div>
-                    </div>
+                            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mb-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                                </svg>
+                            </div>
+                            {stats.doctors === null ? (
+                                <div className="h-10 w-20 bg-white/10 rounded animate-pulse my-1"></div>
+                            ) : (
+                                <div className="text-4xl sm:text-5xl font-black text-white tracking-tight">{format(stats.doctors)}</div>
+                            )}
+                            <div className="text-xs sm:text-sm uppercase tracking-widest font-extrabold text-teal-100 mt-2">{t("audience.doctorTitle")}</div>
+                        </div>
 
-                    <div className="text-white text-3xl font-light opacity-90">=</div>
-
-                    <div className="p-6 rounded-2xl hover-scale transition-all duration-300">
-
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-12 w-12 text-white mx-auto"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={1.5}
-                                d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
-                            />
-                        </svg>
-                        <div className="text-white font-bold mt-3 text-center">Lives Saved</div>
                     </div>
                 </div>
             </div>
