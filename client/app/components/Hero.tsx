@@ -59,10 +59,11 @@ export default function Hero() {
                 <div className="absolute inset-y-0 right-0 w-full lg:w-1/2 z-10 pointer-events-none select-none">
                     <div className="relative w-full h-full">
                         <Image
-                            src="/doctor-kidneys.png"
+                            src="/hero-doctor.png"
                             alt="LifeSync Doctor and Kidney Matching Background"
                             fill
-                            className="object-cover object-right-top opacity-[0.25] lg:opacity-95 transition-opacity duration-500"
+                            className="object-cover opacity-[0.25] lg:opacity-95 transition-opacity duration-500"
+                            style={{ objectPosition: 'center 15%' }}
                             priority
                         />
                         {/* Gradient mask to blend the image into the background from left to right */}
@@ -73,7 +74,7 @@ export default function Hero() {
                 </div>
 
                 <div className="container mx-auto px-6 md:px-12 grid lg:grid-cols-12 gap-12 lg:gap-8 items-center relative z-20">
-                    
+
                     {/* Left Column (Content & Actions) - Span 7 */}
                     <div className="lg:col-span-7 space-y-8 animate-fade-in-up">
                         {/* Pill Badge */}
@@ -187,7 +188,7 @@ export default function Hero() {
 
                 <div className="container mx-auto px-6 max-w-5xl relative z-10">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4 text-center">
-                        
+
                         {/* Patients Stat */}
                         <div className="flex flex-col items-center text-white px-4">
                             <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mb-3">
@@ -207,7 +208,7 @@ export default function Hero() {
                         <div className="flex flex-col items-center text-white px-4 relative">
                             {/* Visual vertical dividers for desktop */}
                             <div className="hidden md:block absolute -left-2 top-4 bottom-4 w-[1px] bg-white/20"></div>
-                            
+
                             <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mb-3">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
