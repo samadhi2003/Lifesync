@@ -102,7 +102,7 @@ export default function HlaEditor({ uid, initial, actorRole, actorUid, onSaved }
                         Transcribe each locus from a Histocompatibility Type-match Report. Enter both alleles per row. Use the broad serological number (e.g. <span className="font-mono">31</span>, <span className="font-mono">35</span>); null alleles can be marked as <span className="font-mono">DRB4*01(N)</span>.
                     </p>
                 </div>
-                {!editing && (
+                {!editing && actorRole !== "doctor" && (
                     <button
                         onClick={startEditing}
                         className="px-4 py-2 bg-[#008080] hover:bg-[#006967] text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all"
