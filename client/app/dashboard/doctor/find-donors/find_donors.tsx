@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Link from "next/link";
 import { db, storage, auth } from "@/lib/firebase";
 import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -394,43 +395,47 @@ export default function FindDonors() {
                                 </div>
                             ) : matches.length > 0 ? (
                                 matches.map((donor, idx) => (
-                                    <div key={idx} className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all group">
+                                    <Link
+                                        key={idx}
+                                        href={`/dashboard/doctor/donors/${donor.id}`}
+                                        className="block bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-md hover:border-teal-100 transition-all group"
+                                    >
                                         <div className="flex items-center gap-4 mb-4">
-                                            <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center text-[#008080]">
+                                            <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center text-[#008080] group-hover:bg-teal-100 transition-colors">
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                 </svg>
                                             </div>
-                                            <div>
+                                            <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                    <h4 className="font-extrabold text-gray-900">{donor.fullName || "Unknown Donor"}</h4>
+                                                    <h4 className="font-extrabold text-gray-900 group-hover:text-[#008080] transition-colors">{donor.fullName as string || "Unknown Donor"}</h4>
                                                     <VerifiedBadge user={donor as Record<string, unknown>} />
                                                 </div>
-                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Blood Group: {donor.bloodGroup || "N/A"}</p>
-                                                {donor.address && <p className="text-[10px] text-gray-400 font-medium mt-1">{donor.address}</p>}
+                                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Blood Group: {donor.bloodGroup as string || "N/A"}</p>
+                                                {donor.address && <p className="text-[10px] text-gray-400 font-medium mt-1">{donor.address as string}</p>}
                                             </div>
                                         </div>
 
-                                        <div className="mb-6">
+                                        <div className="mb-5">
                                             <div className="flex justify-between items-end mb-2">
                                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Match</span>
-                                                <span className="text-lg font-black text-teal-500">{donor.matchPercentage}%</span>
+                                                <span className="text-lg font-black text-teal-500">{donor.matchPercentage as number}%</span>
                                             </div>
                                             <div className="w-full bg-gray-100 rounded-full h-2 shadow-inner overflow-hidden">
                                                 <div
                                                     className="h-full bg-teal-400 rounded-full transition-all duration-1000"
                                                     style={{ width: `${donor.matchPercentage}%` }}
-                                                ></div>
+                                                />
                                             </div>
                                         </div>
 
-                                        <button className="w-full py-3 bg-white text-[#008080] font-bold text-xs uppercase tracking-widest rounded-xl border border-teal-100 hover:bg-teal-50 transition-all flex items-center justify-center gap-2">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                        <div className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-teal-50 group-hover:bg-teal-100 border border-teal-100 transition-colors">
+                                            <span className="text-xs font-black text-teal-600 uppercase tracking-widest">View Profile</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-teal-500 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                                             </svg>
-                                            Save donor
-                                        </button>
-                                    </div>
+                                        </div>
+                                    </Link>
                                 ))
                             ) : null}
                         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { db, auth } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
@@ -648,16 +649,20 @@ export default function Patients() {
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                                     {suggestedDonors.map((donor) => (
-                                        <div key={donor.id} className="bg-white/50 border border-gray-100 p-6 rounded-3xl group hover:shadow-lg transition-all">
+                                        <Link
+                                            key={donor.id}
+                                            href={`/dashboard/doctor/donors/${donor.id}?patientId=${selectedPatient?.id}`}
+                                            className="block bg-white/50 border border-gray-100 p-6 rounded-3xl group hover:shadow-lg hover:border-teal-100 transition-all cursor-pointer"
+                                        >
                                             <div className="flex justify-between items-start mb-6">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center text-[#008080]">
+                                                    <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center text-[#008080] group-hover:bg-teal-100 transition-colors">
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                         </svg>
                                                     </div>
                                                     <div>
-                                                        <h4 className="font-extrabold text-gray-900">{donor.name}</h4>
+                                                        <h4 className="font-extrabold text-gray-900 group-hover:text-[#008080] transition-colors">{donor.name}</h4>
                                                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Blood Group: {donor.bloodGroup}</p>
                                                     </div>
                                                 </div>
@@ -665,7 +670,7 @@ export default function Patients() {
                                                     {donor.status}
                                                 </span>
                                             </div>
-                                            <div className="space-y-2">
+                                            <div className="space-y-2 mb-5">
                                                 <div className="flex justify-between items-end">
                                                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Match</span>
                                                     <span className="text-lg font-black text-teal-500">{donor.matchPercentage}%</span>
@@ -674,7 +679,13 @@ export default function Patients() {
                                                     <div className="h-full bg-teal-400 transition-all" style={{ width: `${donor.matchPercentage}%` }}></div>
                                                 </div>
                                             </div>
-                                        </div>
+                                            <div className="flex items-center justify-center gap-2 mt-4 py-2.5 px-4 rounded-xl bg-teal-50 group-hover:bg-teal-100 border border-teal-100 transition-colors">
+                                                <span className="text-xs font-black text-teal-600 uppercase tracking-widest">View Profile</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-teal-500 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </div>
+                                        </Link>
                                     ))}
                                 </div>
                             )}
