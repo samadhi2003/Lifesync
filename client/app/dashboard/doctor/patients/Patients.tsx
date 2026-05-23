@@ -22,7 +22,7 @@ type EditDraft = {
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const URGENCY_LEVELS = ["Low", "Medium", "High", "Critical"];
 
-function buildDraft(patient: unknown): EditDraft {
+function buildDraft(patient: Record<string, any>): EditDraft {
     const hla: HlaTyping = {};
     const source = (patient?.hla as HlaTyping | undefined) || {};
     for (const locus of LOCI) {
@@ -175,7 +175,7 @@ export default function Patients() {
             try {
                 const snap = await getDoc(doc(db, "users", selectedPatient.doctorId));
                 if (cancelled) return;
-                const data = snap.exists() ? (snap.data() as Record<string, unknown>) : null;
+                const data = snap.exists() ? (snap.data() as Record<string, any>) : null;
                 setPrimaryPhysician(data?.fullName || data?.email || "");
             } catch (err) {
                 console.error("Failed to load primary physician:", err);
@@ -201,10 +201,10 @@ export default function Patients() {
                     query(collection(db, "users"), where("role", "==", "donor")),
                 );
                 const donors = donorsSnap.docs
-                    .map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) }))
+                    .map((d) => ({ id: d.id, ...(d.data() as Record<string, any>) }))
                     // Only verified donors should be suggested for patient matching.
-                    .filter((d: unknown) => isVerified(d))
-                    .map((d: unknown): SuggestedDonor => ({
+                    .filter((d) => isVerified(d as Record<string, any>))
+                    .map((d: Record<string, any>): SuggestedDonor => ({
                         id: d.id,
                         name: d.fullName || "Unnamed Donor",
                         bloodGroup: d.bloodGroup || "—",
@@ -278,8 +278,8 @@ export default function Patients() {
             }));
 
             // Client-side filter for fuzzy search simulation
-            const filtered = fetchedPatients.filter((p: unknown) =>
-                p.name.toLowerCase().includes(searchTerm.toLowerCase())
+            const filtered = fetchedPatients.filter((p: Record<string, any>) =>
+                (p.name as string || "").toLowerCase().includes(searchTerm.toLowerCase())
             );
 
             setPatients(filtered);

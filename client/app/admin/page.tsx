@@ -45,7 +45,7 @@ export default function AdminOverview() {
         (async () => {
             try {
                 const usersSnap = await getDocs(collection(db, "users"));
-                const users = usersSnap.docs.map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) }));
+                const users = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() } as RecentUser & Record<string, unknown>));
 
                 const byRole = (role: string) => users.filter((u) => u.role === role);
 
@@ -67,7 +67,7 @@ export default function AdminOverview() {
                 });
 
                 const recentUsers = [...users]
-                    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
+                    .sort((a, b) => ((b.createdAt as string) || "").localeCompare((a.createdAt as string) || ""))
                     .slice(0, 6);
                 setRecent(recentUsers);
             } catch (err) {

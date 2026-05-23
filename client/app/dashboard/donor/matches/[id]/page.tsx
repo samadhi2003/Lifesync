@@ -89,7 +89,7 @@ export default function PatientProfilePage(props: { params: Promise<{ id: string
                 const donorDoc = user ? await getDoc(doc(db, "users", user.uid)) : null;
                 const donor = donorDoc?.exists() ? { uid: user!.uid, ...donorDoc.data() } : null;
                 if (user && donor) {
-                    setMe({ uid: user.uid, fullName: (donor as Record<string, unknown>).fullName });
+                    setMe({ uid: user.uid, fullName: (donor as Record<string, any>).fullName });
                 } else {
                     setMe(null);
                 }
@@ -101,8 +101,8 @@ export default function PatientProfilePage(props: { params: Promise<{ id: string
                     return;
                 }
 
-                const data = patientDoc.data() as Record<string, unknown>;
-                const detail = computeMatch({ id: params.id, ...data }, donor as Record<string, unknown>);
+                const data = patientDoc.data() as Record<string, any>;
+                const detail = computeMatch({ id: params.id, ...data }, donor as Record<string, any>);
 
                 let requestStatus: RequestStatus | "not_requested" = "not_requested";
                 if (user) {
@@ -125,12 +125,12 @@ export default function PatientProfilePage(props: { params: Promise<{ id: string
                     provisional: detail.provisional,
                     hlaResult: detail.hla,
                     patientHla: data.hla || null,
-                    donorHla: (donor as Record<string, unknown>)?.hla || null,
+                    donorHla: (donor as Record<string, any>)?.hla || null,
                     bio: data.bio || "This patient has not provided a personal bio yet.",
                     medicalInfo: {
                         bloodTypeCompatible: isBloodCompatible(
                             data.bloodGroup,
-                            (donor as Record<string, unknown>)?.bloodGroup,
+                            (donor as Record<string, any>)?.bloodGroup,
                         ),
                         hlaReportUrl: data.hlaReportURL,
                     },

@@ -40,7 +40,7 @@ export default function PatientDashboard() {
                 const donorsSnapshot = await getDocs(collection(db, "users"));
                 const donorsList = donorsSnapshot.docs
                     .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .filter((u: unknown) => u.role === "donor" && isVerified(u));
+                    .filter((u: Record<string, any>) => u.role === "donor" && isVerified(u as Record<string, any>));
 
                 setDonors(donorsList);
                 setLoading(false);
@@ -73,7 +73,7 @@ export default function PatientDashboard() {
         [donors, currentUser],
     );
 
-    const handleRequest = async (donor: unknown) => {
+    const handleRequest = async (donor: any) => {
         if (!currentUser?.uid) return;
         setRequestingId(donor.id);
         try {

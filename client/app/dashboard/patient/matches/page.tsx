@@ -42,8 +42,8 @@ export default function MatchesPage() {
 
                 const donorsSnapshot = await getDocs(collection(db, "users"));
                 const fetched = donorsSnapshot.docs
-                    .map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) }))
-                    .filter((u: unknown) => u.role === "donor" && isVerified(u));
+                    .map((d) => ({ id: d.id, ...(d.data() as Record<string, any>) }))
+                    .filter((u: Record<string, any>) => u.role === "donor" && isVerified(u as Record<string, any>));
 
                 setVerifiedDonors(fetched);
             } catch (err) {
