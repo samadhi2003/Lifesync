@@ -1,0 +1,8 @@
+# Firebase Admin SDK service account keys — never commit
+serviceAccountKey.json
+serviceAccountKey*.json
+*-firebase-adminsdk-*.json
+
+# Local script workspace
+scripts/node_modules/
+scripts/package-lock.json
