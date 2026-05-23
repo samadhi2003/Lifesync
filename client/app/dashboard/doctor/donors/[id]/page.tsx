@@ -54,9 +54,9 @@ export default function DoctorDonorProfilePage(props: { params: Promise<{ id: st
                     return;
                 }
 
-                const data = donorDoc.data() as Record<string, unknown>;
+                const data = donorDoc.data() as Record<string, any>;
 
-                let patient: Record<string, unknown> | null = null;
+                let patient: Record<string, any> | null = null;
                 if (patientId) {
                     const patientDoc = await getDoc(doc(db, "patients", patientId));
                     if (patientDoc.exists()) {
@@ -81,7 +81,7 @@ export default function DoctorDonorProfilePage(props: { params: Promise<{ id: st
                     bio: (data.bio as string) || "This donor has not provided a personal bio yet.",
                     hlaReportUrl: data.hlaReportURL as string | undefined,
                     medicalReportUrl: data.medicalReportURL as string | undefined,
-                    bloodTypeCompatible: isBloodCompatible(patient?.bloodGroup, data.bloodGroup),
+                    bloodTypeCompatible: isBloodCompatible(patient?.bloodGroup as string | undefined, data.bloodGroup as string | undefined),
                 });
             } catch (err) {
                 console.error("Failed to load donor profile:", err);

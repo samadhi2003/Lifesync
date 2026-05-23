@@ -135,7 +135,7 @@ export default function FindDonors() {
 
             // Generate deterministic match percentage
             const donorsWithMatch = donors.map(d => {
-                const pseudoRandom = (d.uid || d.id || "").split("").reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0) % 40 + 60; // 60-99%
+                const pseudoRandom = ((d.uid as string) || (d.id as string) || "").split("").reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0) % 40 + 60; // 60-99%
                 return { ...d, matchPercentage: pseudoRandom };
             });
 
@@ -412,7 +412,7 @@ export default function FindDonors() {
                                                     <VerifiedBadge user={donor as Record<string, unknown>} />
                                                 </div>
                                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Blood Group: {donor.bloodGroup as string || "N/A"}</p>
-                                                {donor.address && <p className="text-[10px] text-gray-400 font-medium mt-1">{donor.address as string}</p>}
+                                                {Boolean(donor.address) && <p className="text-[10px] text-gray-400 font-medium mt-1">{donor.address as string}</p>}
                                             </div>
                                         </div>
 

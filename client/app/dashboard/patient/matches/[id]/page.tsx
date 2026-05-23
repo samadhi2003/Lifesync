@@ -56,10 +56,10 @@ export default function DonorProfilePage(props: { params: Promise<{ id: string }
                 if (user && patient) {
                     setMe({
                         uid: user.uid,
-                        fullName: (patient as Record<string, unknown>).fullName,
-                        bloodGroup: (patient as Record<string, unknown>).bloodGroup,
-                        urgency: (patient as Record<string, unknown>).urgency,
-                        address: (patient as Record<string, unknown>).address,
+                        fullName: (patient as Record<string, any>).fullName,
+                        bloodGroup: (patient as Record<string, any>).bloodGroup,
+                        urgency: (patient as Record<string, any>).urgency,
+                        address: (patient as Record<string, any>).address,
                     });
                 } else {
                     setMe(null);
@@ -72,8 +72,8 @@ export default function DonorProfilePage(props: { params: Promise<{ id: string }
                     return;
                 }
 
-                const data = donorDoc.data() as Record<string, unknown>;
-                const detail = computeMatch(patient as Record<string, unknown>, { id: params.id, ...data });
+                const data = donorDoc.data() as Record<string, any>;
+                const detail = computeMatch(patient as Record<string, any>, { id: params.id, ...data });
 
                 let requestStatus: RequestStatus | "not_requested" = "not_requested";
                 if (user) {
@@ -94,13 +94,13 @@ export default function DonorProfilePage(props: { params: Promise<{ id: string }
                     match: detail.score,
                     provisional: detail.provisional,
                     hlaResult: detail.hla,
-                    patientHla: (patient as Record<string, unknown>)?.hla || null,
+                    patientHla: (patient as Record<string, any>)?.hla || null,
                     donorHla: data.hla || null,
                     requestStatus,
                     bio: data.bio || "This donor has not provided a personal bio yet.",
                     medicalInfo: {
                         bloodTypeCompatible: isBloodCompatible(
-                            (patient as Record<string, unknown>)?.bloodGroup,
+                            (patient as Record<string, any>)?.bloodGroup,
                             data.bloodGroup,
                         ),
                         hlaReportUrl: data.hlaReportURL,

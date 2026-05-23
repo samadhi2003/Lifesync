@@ -76,8 +76,8 @@ export default function DoctorVerificationsPage() {
                 const snap = await getDocs(collection(db, "users"));
                 if (cancelled) return;
                 const rows = snap.docs
-                    .map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) }))
-                    .filter((u) => u.role === "patient" || u.role === "donor");
+                    .map((d) => ({ id: d.id, ...(d.data() as Record<string, any>) }))
+                    .filter((u: Record<string, any>) => u.role === "patient" || u.role === "donor");
                 setUsers(rows);
             } catch (err) {
                 console.error(err);

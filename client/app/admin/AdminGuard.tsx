@@ -29,14 +29,14 @@ export default function AdminGuard({ children, onReady }: { children: React.Reac
 
             try {
                 const snap = await getDoc(doc(db, "users", user.uid));
-                const role = snap.exists() ? (snap.data() as Record<string, unknown>).role : null;
+                const role = snap.exists() ? (snap.data() as Record<string, any>).role : null;
                 if (role === "admin") {
-                    const data = snap.data() as Record<string, unknown>;
+                    const data = snap.data() as Record<string, any>;
                     onReady?.({
                         uid: user.uid,
-                        fullName: data.fullName || user.displayName || "Administrator",
-                        email: data.email || user.email || "",
-                        photoURL: data.photoURL,
+                        fullName: (data.fullName as string) || user.displayName || "Administrator",
+                        email: (data.email as string) || user.email || "",
+                        photoURL: data.photoURL as string | undefined,
                     });
                     setStatus("ok");
                 } else {

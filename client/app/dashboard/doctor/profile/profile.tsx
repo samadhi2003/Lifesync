@@ -51,7 +51,7 @@ export default function DoctorProfile() {
                     const patientsSnap = await getDocs(
                         query(collection(db, "patients"), where("doctorId", "==", user.uid)),
                     );
-                    const patientDocs = patientsSnap.docs.map((d) => d.data() as Record<string, unknown>);
+                    const patientDocs = patientsSnap.docs.map((d) => d.data() as Record<string, any>);
                     const livesImpacted = patientDocs.length;
                     const matchedCount = patientDocs.filter((p) => (p.status || "").toLowerCase() === "matched").length;
                     const matchAccuracy = livesImpacted > 0 ? Math.round((matchedCount / livesImpacted) * 100) : null;

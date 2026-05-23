@@ -145,7 +145,7 @@ export default function DonorProfile() {
             await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(storageRef);
 
-            const updateData: unknown = {};
+            const updateData: Record<string, any> = {};
             if (type === 'hla') updateData.hlaReportURL = downloadURL;
             else updateData.medicalReportURL = downloadURL;
 
