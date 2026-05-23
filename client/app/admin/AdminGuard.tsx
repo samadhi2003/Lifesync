@@ -34,9 +34,9 @@ export default function AdminGuard({ children, onReady }: { children: React.Reac
                     const data = snap.data() as Record<string, unknown>;
                     onReady?.({
                         uid: user.uid,
-                        fullName: data.fullName || user.displayName || "Administrator",
-                        email: data.email || user.email || "",
-                        photoURL: data.photoURL,
+                        fullName: (data.fullName as string) || user.displayName || "Administrator",
+                        email: (data.email as string) || user.email || "",
+                        photoURL: data.photoURL as string | undefined,
                     });
                     setStatus("ok");
                 } else {
