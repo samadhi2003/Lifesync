@@ -50,7 +50,7 @@ export default function VerificationList({
             try {
                 const snap = await getDocs(query(collection(db, "users"), where("role", "==", role)));
                 if (cancelled) return;
-                setRows(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) })));
+                setRows(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Row)));
             } catch (err) {
                 console.error(err);
                 setFeedback({ type: "err", message: "Failed to load users." });

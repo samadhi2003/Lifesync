@@ -37,11 +37,11 @@ export default function AdminPatientsPage() {
                 ]);
                 if (cancelled) return;
 
-                setRecords(patientsSnap.docs.map((d) => ({ id: d.id, ...(d.data() as Record<string, unknown>) })));
+                setRecords(patientsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as PatientRecord)));
 
                 const map: Record<string, string> = {};
                 usersSnap.docs.forEach((d) => {
-                    const data = d.data() as Record<string, unknown>;
+                    const data = d.data();
                     if (data.role === "doctor") {
                         map[d.id] = data.fullName || data.email || d.id;
                     }

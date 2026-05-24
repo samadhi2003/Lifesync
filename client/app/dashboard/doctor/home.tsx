@@ -56,8 +56,8 @@ export default function DoctorHome() {
                     );
                     const doctorPatients = doctorPatientsSnap.docs.map((d) => ({
                         id: d.id,
-                        ...(d.data() as Record<string, unknown>),
-                    }));
+                        ...d.data(),
+                    } as Record<string, any>));
 
                     const pendingApprovals = doctorPatients.filter(
                         (p) => (p.status || "").toString().toLowerCase() === "searching",
@@ -74,7 +74,7 @@ export default function DoctorHome() {
                     const recent: RecentPatient[] = doctorPatients
                         .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
                         .slice(0, 3)
-                        .map((p: unknown) => ({
+                        .map((p) => ({
                             id: p.id,
                             name: p.name || "Unnamed Patient",
                             initials: initials(p.name || "?"),
