@@ -77,15 +77,6 @@ export default function Hero() {
 
                     {/* Left Column (Content & Actions) - Span 7 */}
                     <div className="lg:col-span-7 space-y-8 animate-fade-in-up">
-                        {/* Pill Badge */}
-                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-800 text-sm font-semibold shadow-sm backdrop-blur-md">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
-                            </span>
-                            <span className="tracking-wide text-xs uppercase text-teal-700 font-bold">{t("hero.badge")}</span>
-                        </div>
-
                         {/* Heading */}
                         <h1 className={`text-4xl sm:text-5xl xl:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.1] ${language === 'si' || language === 'ta' ? 'leading-tight' : ''}`}>
                             {language === 'en' ? (
